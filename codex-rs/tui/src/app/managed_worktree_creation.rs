@@ -200,7 +200,11 @@ impl App {
                         })
                         .await
                         .unwrap_or_else(|error| {
-                            Err(format!("Worktree creation task failed: {error}"))
+                            Err(crate::i18n::tr_format!(
+                                "worktree-creation-failed",
+                                "Worktree creation task failed: {error}",
+                                error = error
+                            ))
                         });
                         sender.send(AppEvent::ManagedWorktreeCreated(Box::new(
                             ManagedWorktreeCreated {

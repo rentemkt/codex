@@ -359,7 +359,10 @@ impl App {
                 || config.permissions.profile_workspace_roots()
                     != self.config.permissions.profile_workspace_roots())
         {
-            return self.working_directory_error("Permission profile has different settings.");
+            return self.working_directory_error(crate::i18n::tr!(
+                "agents-permissions-differ",
+                "Permission profile has different settings."
+            ));
         }
         if let Some(profile) = profile.as_ref()
             && profile.turn_override == RuntimePermissionProfileTurnOverride::Preserve

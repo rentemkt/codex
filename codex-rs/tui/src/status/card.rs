@@ -436,10 +436,10 @@ impl StatusHistoryCell {
             Span::from(" total "),
             Span::from(" (").dim(),
             Span::from(input_fmt).dim(),
-            Span::from(" input").dim(),
+            Span::from(crate::i18n::tr!("status-token-input", " input")).dim(),
             Span::from(" + ").dim(),
             Span::from(output_fmt).dim(),
-            Span::from(" output").dim(),
+            Span::from(crate::i18n::tr!("status-token-output", " output")).dim(),
             Span::from(")").dim(),
         ]
     }
@@ -451,10 +451,14 @@ impl StatusHistoryCell {
         let window_fmt = format_tokens_compact(context.window);
 
         Some(vec![
-            Span::from(format!("{percent}% left")),
+            Span::from(crate::i18n::tr_format!(
+                "status-context-left",
+                "{percent}% left",
+                percent = percent
+            )),
             Span::from(" (").dim(),
             Span::from(used_fmt).dim(),
-            Span::from(" used / ").dim(),
+            Span::from(crate::i18n::tr!("status-token-used-separator", " used / ")).dim(),
             Span::from(window_fmt).dim(),
             Span::from(")").dim(),
         ])
@@ -470,8 +474,14 @@ impl StatusHistoryCell {
             StatusRateLimitData::Available(rows_data) => {
                 if rows_data.is_empty() {
                     return vec![formatter.line(
-                        "Limits",
-                        vec![Span::from("not available for this account").dim()],
+                        crate::i18n::tr!("status-card-limits-label", "Limits"),
+                        vec![
+                                Span::from(crate::i18n::tr!(
+                                    "status-card-limits-unavailable",
+                                    "not available for this account"
+                                ))
+                                .dim(),
+                            ],
                     )];
                 }
 
@@ -481,31 +491,53 @@ impl StatusHistoryCell {
                 let mut lines =
                     self.rate_limit_row_lines(rows_data, available_inner_width, formatter);
                 lines.push(formatter.line(
-                    "Warning",
-                    vec![Span::from(if state.refreshing_rate_limits {
-                        "limits may be stale - run /status again shortly."
-                    } else {
-                        "limits may be stale - start new turn to refresh."
-                    })
-                    .dim()],
+                    crate::i18n::tr!("status-card-warning-label", "Warning"),
+                    vec![
+                            Span::from(if state.refreshing_rate_limits {
+                                crate::i18n::tr!(
+                                    "status-card-limits-stale-run-status",
+                                    "limits may be stale - run /status again shortly."
+                                )
+                            } else {
+                                crate::i18n::tr!(
+                                    "status-card-limits-stale-new-turn",
+                                    "limits may be stale - start new turn to refresh."
+                                )
+                            })
+                            .dim(),
+                        ],
                 ));
                 lines
             }
             StatusRateLimitData::Unavailable => {
                 vec![formatter.line(
-                    "Limits",
-                    vec![Span::from("not available for this account").dim()],
+                    crate::i18n::tr!("status-card-limits-label", "Limits"),
+                    vec![
+                            Span::from(crate::i18n::tr!(
+                                "status-card-limits-unavailable",
+                                "not available for this account"
+                            ))
+                            .dim(),
+                        ],
                 )]
             }
             StatusRateLimitData::Missing => {
                 vec![formatter.line(
-                    "Limits",
-                    vec![Span::from(if state.refreshing_rate_limits {
-                        "refresh requested; run /status again shortly."
-                    } else {
-                        "data not available yet"
-                    })
-                    .dim()],
+                    crate::i18n::tr!("status-card-limits-label", "Limits"),
+                    vec![
+                            Span::from(if state.refreshing_rate_limits {
+                                crate::i18n::tr!(
+                                    "status-card-limits-refresh-requested",
+                                    "refresh requested; run /status again shortly."
+                                )
+                            } else {
+                                crate::i18n::tr!(
+                                    "status-card-limits-data-pending",
+                                    "data not available yet"
+                                )
+                            })
+                            .dim(),
+                        ],
                 )]
             }
         }
@@ -546,7 +578,12 @@ impl StatusHistoryCell {
                     let base_line = Line::from(base_spans.clone());
 
                     if let Some(resets_at) = resets_at.as_ref() {
-                        let resets_span = Span::from(format!("(resets {resets_at})")).dim();
+                        let resets_span = Span::from(crate::i18n::tr_format!(
+                            "status-resets-at",
+                            "(resets {resets_at})",
+                            resets_at = resets_at
+                        ))
+                        .dim();
                         let mut inline_spans = base_spans.clone();
                         inline_spans.push(Span::from(" ").dim());
                         inline_spans.push(resets_span.clone());
@@ -555,7 +592,11 @@ impl StatusHistoryCell {
                             lines.push(Line::from(inline_spans));
                         } else {
                             lines.push(base_line);
-                            let reset_text = format!("(resets {resets_at})");
+                            let reset_text = crate::i18n::tr_format!(
+                                "status-resets-at",
+                                "(resets {resets_at})",
+                                resets_at = resets_at
+                            );
                             let reset_width = formatter.value_width(available_inner_width).max(1);
                             let wrap_options =
                                 textwrap::Options::new(reset_width).break_words(false);
@@ -608,7 +649,11 @@ impl StatusHistoryCell {
         match &state.rate_limits {
             StatusRateLimitData::Available(rows) => {
                 if rows.is_empty() {
-                    push_label(labels, seen, "Limits");
+                    push_label(
+                        labels,
+                        seen,
+                        crate::i18n::tr!("status-card-limits-label", "Limits"),
+                    );
                 } else {
                     for row in rows {
                         push_label(labels, seen, row.label.as_str());
@@ -619,10 +664,22 @@ impl StatusHistoryCell {
                 for row in rows {
                     push_label(labels, seen, row.label.as_str());
                 }
-                push_label(labels, seen, "Warning");
+                push_label(
+                    labels,
+                    seen,
+                    crate::i18n::tr!("status-card-warning-label", "Warning"),
+                );
             }
-            StatusRateLimitData::Unavailable => push_label(labels, seen, "Limits"),
-            StatusRateLimitData::Missing => push_label(labels, seen, "Limits"),
+            StatusRateLimitData::Unavailable => push_label(
+                labels,
+                seen,
+                crate::i18n::tr!("status-card-limits-label", "Limits"),
+            ),
+            StatusRateLimitData::Missing => push_label(
+                labels,
+                seen,
+                crate::i18n::tr!("status-card-limits-label", "Limits"),
+            ),
         }
     }
 }
@@ -676,23 +733,27 @@ fn status_permissions_label(
     match active_id {
         Some(BUILT_IN_PERMISSION_PROFILE_READ_ONLY) => {
             let label = if sandbox == "read-only with network access" {
-                "Read Only with network access"
+                crate::i18n::tr!("status-read-only-network", "Read Only with network access")
             } else {
-                "Read Only"
+                crate::i18n::tr!("permissions-read-only", "Read Only")
             };
             return format!("{label} ({approval})");
         }
         Some(BUILT_IN_PERMISSION_PROFILE_WORKSPACE) => match sandbox {
             "workspace" => {
-                return format!(
-                    "Workspace{} ({approval})",
-                    workspace_root_suffix.unwrap_or("")
+                return crate::i18n::tr_format!(
+                    "status-workspace-approval",
+                    "Workspace{roots} ({approval})",
+                    roots = workspace_root_suffix.unwrap_or(""),
+                    approval = approval
                 );
             }
             "workspace with network access" => {
-                return format!(
-                    "Workspace with network access{} ({approval})",
-                    workspace_root_suffix.unwrap_or("")
+                return crate::i18n::tr_format!(
+                    "status-workspace-network-approval",
+                    "Workspace with network access{roots} ({approval})",
+                    roots = workspace_root_suffix.unwrap_or(""),
+                    approval = approval
                 );
             }
             _ => {}
@@ -701,34 +762,55 @@ fn status_permissions_label(
             if permission_profile == &PermissionProfile::Disabled =>
         {
             return if approval_policy == AskForApproval::Never {
-                "Full Access".to_string()
+                crate::i18n::tr!("permissions-full-access", "Full Access").to_string()
             } else {
-                format!("No Sandbox ({approval})")
+                crate::i18n::tr_format!(
+                    "status-no-sandbox",
+                    "No Sandbox ({approval})",
+                    approval = approval
+                )
             };
         }
         Some(id) => {
             let sandbox = decorate_workspace_sandbox_label(sandbox, workspace_root_suffix);
-            return format!("Profile {id} ({sandbox}, {approval})");
+            return crate::i18n::tr_format!(
+                "status-profile",
+                "Profile {id} ({sandbox}, {approval})",
+                id = id,
+                sandbox = sandbox,
+                approval = approval
+            );
         }
         None => {}
     }
 
     if sandbox == "read-only" {
-        return format!("Read Only ({approval})");
+        return crate::i18n::tr_format!(
+            "status-read-only-approval",
+            "Read Only ({approval})",
+            approval = approval
+        );
     }
     if approval_policy == AskForApproval::OnRequest && sandbox == "workspace" {
-        return format!(
-            "Workspace{} ({approval})",
-            workspace_root_suffix.unwrap_or("")
+        return crate::i18n::tr_format!(
+            "status-workspace-approval",
+            "Workspace{roots} ({approval})",
+            roots = workspace_root_suffix.unwrap_or(""),
+            approval = approval
         );
     }
     if approval_policy == AskForApproval::Never
         && permission_profile == &PermissionProfile::Disabled
     {
-        return "Full Access".to_string();
+        return crate::i18n::tr!("permissions-full-access", "Full Access").to_string();
     }
     let sandbox = decorate_workspace_sandbox_label(sandbox, workspace_root_suffix);
-    format!("Custom ({sandbox}, {approval})")
+    crate::i18n::tr_format!(
+        "status-custom-permissions",
+        "Custom ({sandbox}, {approval})",
+        sandbox = sandbox,
+        approval = approval
+    )
 }
 
 fn decorate_workspace_sandbox_label(sandbox: &str, workspace_root_suffix: Option<&str>) -> String {
@@ -745,8 +827,12 @@ fn status_approval_label(
 ) -> String {
     if approval_policy == AskForApproval::OnRequest {
         return match approvals_reviewer {
-            ApprovalsReviewer::AutoReview => "Approve for me".to_string(),
-            ApprovalsReviewer::User => "Ask for approval".to_string(),
+            ApprovalsReviewer::AutoReview => {
+                crate::i18n::tr!("permissions-approve-for-me", "Approve for me").to_string()
+            }
+            ApprovalsReviewer::User => {
+                crate::i18n::tr!("permissions-ask-for-approval", "Ask for approval").to_string()
+            }
         };
     }
 
@@ -768,9 +854,11 @@ impl StatusHistoryCell {
                 (None, Some(plan)) => plan.clone(),
                 (None, None) => "ChatGPT".to_string(),
             },
-            StatusAccountDisplay::ApiKey => {
-                "API key configured (run codex login to use ChatGPT)".to_string()
-            }
+            StatusAccountDisplay::ApiKey => crate::i18n::tr!(
+                "status-card-api-key-configured",
+                "API key configured (run codex login to use ChatGPT)"
+            )
+            .to_string(),
         });
 
         let workspace = match &self.account {
@@ -778,10 +866,15 @@ impl StatusHistoryCell {
             _ => None,
         };
 
-        let mut labels: Vec<String> = vec!["Model", "Directory", "Permissions", "Agents.md"]
-            .into_iter()
-            .map(str::to_string)
-            .collect();
+        let mut labels: Vec<String> = vec![
+            crate::i18n::tr!("status-card-model-label", "Model"),
+            crate::i18n::tr!("status-card-directory-label", "Directory"),
+            crate::i18n::tr!("status-card-permissions-label", "Permissions"),
+            crate::i18n::tr!("status-card-agents-label", "Agents.md"),
+        ]
+        .into_iter()
+        .map(str::to_string)
+        .collect();
         let mut seen: BTreeSet<String> = labels.iter().cloned().collect();
         let thread_name = self.thread_name.as_deref().filter(|name| !name.is_empty());
         #[expect(clippy::expect_used)]
@@ -797,29 +890,65 @@ impl StatusHistoryCell {
             .clone();
 
         if self.model_provider.is_some() {
-            push_label(&mut labels, &mut seen, "Model provider");
+            push_label(
+                &mut labels,
+                &mut seen,
+                crate::i18n::tr!("status-card-model-provider-label", "Model provider"),
+            );
         }
         if account_value.is_some() {
-            push_label(&mut labels, &mut seen, "Account");
+            push_label(
+                &mut labels,
+                &mut seen,
+                crate::i18n::tr!("status-card-account-label", "Account"),
+            );
         }
         if workspace.is_some() {
-            push_label(&mut labels, &mut seen, "ChatGPT workspace");
+            push_label(
+                &mut labels,
+                &mut seen,
+                crate::i18n::tr!("status-card-workspace-label", "ChatGPT workspace"),
+            );
         }
         if thread_name.is_some() {
-            push_label(&mut labels, &mut seen, "Thread name");
+            push_label(
+                &mut labels,
+                &mut seen,
+                crate::i18n::tr!("status-card-thread-name-label", "Thread name"),
+            );
         }
         if self.session_id.is_some() {
-            push_label(&mut labels, &mut seen, "Session");
+            push_label(
+                &mut labels,
+                &mut seen,
+                crate::i18n::tr!("status-card-session-label", "Session"),
+            );
         }
         if self.session_id.is_some() && self.forked_from.is_some() {
-            push_label(&mut labels, &mut seen, "Forked from");
+            push_label(
+                &mut labels,
+                &mut seen,
+                crate::i18n::tr!("status-card-forked-from-label", "Forked from"),
+            );
         }
         if self.collaboration_mode.is_some() {
-            push_label(&mut labels, &mut seen, "Collaboration mode");
+            push_label(
+                &mut labels,
+                &mut seen,
+                crate::i18n::tr!("status-card-collaboration-mode-label", "Collaboration mode"),
+            );
         }
-        push_label(&mut labels, &mut seen, "Token usage");
+        push_label(
+            &mut labels,
+            &mut seen,
+            crate::i18n::tr!("status-card-token-usage-label", "Token usage"),
+        );
         if self.token_usage.context_window.is_some() {
-            push_label(&mut labels, &mut seen, "Context window");
+            push_label(
+                &mut labels,
+                &mut seen,
+                crate::i18n::tr!("status-card-context-window-label", "Context window"),
+            );
         }
         self.collect_rate_limit_labels(&rate_limit_state, &mut seen, &mut labels);
         self.thread_usage.push_labels(&mut labels, &mut seen);
@@ -829,7 +958,10 @@ impl StatusHistoryCell {
 
         if let Some(remote_connection) = self.remote_connection.as_ref() {
             let value = if remote_connection.is_local_daemon {
-                Line::from("Local background server")
+                Line::from(crate::i18n::tr!(
+                    "status-card-local-server",
+                    "Local background server"
+                ))
             } else {
                 Line::from(vec![
                     Span::from(remote_connection.address.clone()),
@@ -841,7 +973,10 @@ impl StatusHistoryCell {
             let wrapped_remote = word_wrap_lines([value], RtOptions::new(value_width.max(1)));
             let mut wrapped_remote = wrapped_remote.into_iter();
             if let Some(first) = wrapped_remote.next() {
-                lines.push(formatter.line("Server", first.spans));
+                lines.push(formatter.line(
+                    crate::i18n::tr!("status-card-remote-label", "Server"),
+                    first.spans,
+                ));
                 lines.extend(wrapped_remote.map(|line| formatter.continuation(line.spans)));
             }
             lines.push(Line::from(Vec::<Span<'static>>::new()));
@@ -856,44 +991,83 @@ impl StatusHistoryCell {
 
         let directory_value = format_directory_display(&self.directory, /*max_width*/ None);
 
-        lines.push(formatter.line("Model", model_spans));
+        lines.push(formatter.line(
+            crate::i18n::tr!("status-card-model-label", "Model"),
+            model_spans,
+        ));
         if let Some(model_provider) = self.model_provider.as_ref() {
-            lines.push(formatter.line("Model provider", vec![Span::from(model_provider.clone())]));
+            lines.push(formatter.line(
+                crate::i18n::tr!("status-card-model-provider-label", "Model provider"),
+                vec![Span::from(model_provider.clone())],
+            ));
         }
-        lines.push(formatter.line("Directory", vec![Span::from(directory_value)]));
-        lines.push(formatter.line("Permissions", vec![Span::from(self.permissions.clone())]));
-        lines.push(formatter.line("Agents.md", vec![Span::from(agents_summary)]));
+        lines.push(formatter.line(
+            crate::i18n::tr!("status-card-directory-label", "Directory"),
+            vec![Span::from(directory_value)],
+        ));
+        lines.push(formatter.line(
+            crate::i18n::tr!("status-card-permissions-label", "Permissions"),
+            vec![Span::from(self.permissions.clone())],
+        ));
+        lines.push(formatter.line(
+            crate::i18n::tr!("status-card-agents-label", "Agents.md"),
+            vec![Span::from(agents_summary)],
+        ));
 
         if let Some(account_value) = account_value {
-            lines.push(formatter.line("Account", vec![Span::from(account_value)]));
+            lines.push(formatter.line(
+                crate::i18n::tr!("status-card-account-label", "Account"),
+                vec![Span::from(account_value)],
+            ));
         }
         if let Some(workspace) = workspace {
-            lines.push(formatter.line("ChatGPT workspace", vec![Span::from(workspace.to_owned())]));
+            lines.push(formatter.line(
+                crate::i18n::tr!("status-card-workspace-label", "ChatGPT workspace"),
+                vec![Span::from(workspace.to_owned())],
+            ));
         }
 
         if let Some(thread_name) = thread_name {
-            lines.push(formatter.line("Thread name", vec![Span::from(thread_name.to_string())]));
+            lines.push(formatter.line(
+                crate::i18n::tr!("status-card-thread-name-label", "Thread name"),
+                vec![Span::from(thread_name.to_string())],
+            ));
         }
         if let Some(collab_mode) = self.collaboration_mode.as_ref() {
-            lines.push(formatter.line("Collaboration mode", vec![Span::from(collab_mode.clone())]));
+            lines.push(formatter.line(
+                crate::i18n::tr!("status-card-collaboration-mode-label", "Collaboration mode"),
+                vec![Span::from(collab_mode.clone())],
+            ));
         }
         if let Some(session) = self.session_id.as_ref() {
-            lines.push(formatter.line("Session", vec![Span::from(session.clone())]));
+            lines.push(formatter.line(
+                crate::i18n::tr!("status-card-session-label", "Session"),
+                vec![Span::from(session.clone())],
+            ));
         }
         if self.session_id.is_some()
             && let Some(forked_from) = self.forked_from.as_ref()
         {
-            lines.push(formatter.line("Forked from", vec![Span::from(forked_from.clone())]));
+            lines.push(formatter.line(
+                crate::i18n::tr!("status-card-forked-from-label", "Forked from"),
+                vec![Span::from(forked_from.clone())],
+            ));
         }
 
         lines.push(Line::from(Vec::<Span<'static>>::new()));
         // Hide token usage only for ChatGPT subscribers
         if !matches!(self.account, Some(StatusAccountDisplay::ChatGpt { .. })) {
-            lines.push(formatter.line("Token usage", self.token_usage_spans()));
+            lines.push(formatter.line(
+                crate::i18n::tr!("status-card-token-usage-label", "Token usage"),
+                self.token_usage_spans(),
+            ));
         }
 
         if let Some(spans) = self.context_window_spans() {
-            lines.push(formatter.line("Context window", spans));
+            lines.push(formatter.line(
+                crate::i18n::tr!("status-card-context-window-label", "Context window"),
+                spans,
+            ));
         }
 
         lines.extend(self.rate_limit_lines(&rate_limit_state, available_width, &formatter));
@@ -921,16 +1095,20 @@ impl StatusHistoryCell {
         // Providers such as Bedrock manage limits and billing elsewhere.
         if self.show_chatgpt_usage_link {
             rendered.extend(word_wrap_lines(
-                [
-                    Line::from(vec![
-                        "Visit ".fg(accent_color()),
-                        CHATGPT_USAGE_URL.fg(accent_color()).underlined(),
-                        " for up-to-date".fg(accent_color()),
-                    ]),
-                    "information on rate limits and credits"
-                        .fg(accent_color())
-                        .into(),
-                ],
+                [Line::from({
+                    let usage_note = crate::i18n::global().text_with_string_arg(
+                        "status-card-usage-note", "url", CHATGPT_USAGE_URL,
+                        || format!("Visit {CHATGPT_USAGE_URL} for up-to-date information on rate limits and credits"),
+                    );
+                    match usage_note.split_once(CHATGPT_USAGE_URL) {
+                        Some((before, after)) => vec![
+                            Span::from(before.to_string()).fg(accent_color()),
+                            CHATGPT_USAGE_URL.fg(accent_color()).underlined(),
+                            Span::from(after.to_string()).fg(accent_color()),
+                        ],
+                        None => vec![Span::from(usage_note).fg(accent_color())],
+                    }
+                })],
                 RtOptions::new(available_width)
                     .initial_indent(indent.into())
                     .subsequent_indent(indent.into())

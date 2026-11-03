@@ -475,7 +475,10 @@ impl AgentsOverviewView {
                 row.thread
                     .reasoning_effort
                     .as_ref()
-                    .map_or("Unknown", ReasoningEffort::as_str)
+                    .map_or(
+                        crate::i18n::tr!("ui-unknown", "Unknown"),
+                        ReasoningEffort::as_str,
+                    )
                     .to_string()
                     .into(),
             ]),

@@ -15,20 +15,50 @@ fn normalize_agents_display_path(path: &Path) -> String {
     format_directory_display(dunce::simplified(path), /*max_width*/ None)
 }
 
+fn localized_reasoning_effort(effort: &str) -> &str {
+    match effort {
+        "none" => crate::i18n::tr!("reasoning-effort-none", "none"),
+        "minimal" => crate::i18n::tr!("reasoning-effort-minimal", "minimal"),
+        "low" => crate::i18n::tr!("reasoning-effort-low", "low"),
+        "medium" => crate::i18n::tr!("reasoning-effort-medium", "medium"),
+        "high" => crate::i18n::tr!("reasoning-effort-high", "high"),
+        "xhigh" => crate::i18n::tr!("reasoning-effort-extra-high", "xhigh"),
+        "max" => crate::i18n::tr!("reasoning-effort-max", "max"),
+        "ultra" => crate::i18n::tr!("reasoning-effort-ultra", "ultra"),
+        other => other,
+    }
+}
+
 pub(crate) fn compose_model_display(
     model_name: &str,
     entries: &[(&str, String)],
 ) -> (String, Vec<String>) {
     let mut details: Vec<String> = Vec::new();
     if let Some((_, effort)) = entries.iter().find(|(k, _)| *k == "reasoning effort") {
-        details.push(format!("reasoning {}", effort.to_ascii_lowercase()));
+        let effort = effort.to_ascii_lowercase();
+        let effort = localized_reasoning_effort(&effort);
+        details.push(crate::i18n::tr_format!(
+            "status-model-reasoning",
+            "reasoning {effort}",
+            effort = effort
+        ));
     }
     if let Some((_, summary)) = entries.iter().find(|(k, _)| *k == "reasoning summaries") {
         let summary = summary.trim();
         if summary.eq_ignore_ascii_case("none") || summary.eq_ignore_ascii_case("off") {
-            details.push("summaries off".to_string());
+            details.push(crate::i18n::tr!("status-summaries-off", "summaries off").to_string());
         } else if !summary.is_empty() {
-            details.push(format!("summaries {}", summary.to_ascii_lowercase()));
+            let summary = match summary {
+                "auto" => crate::i18n::tr!("status-summaries-auto", "auto"),
+                "concise" => crate::i18n::tr!("status-summaries-concise", "concise"),
+                "detailed" => crate::i18n::tr!("status-summaries-detailed", "detailed"),
+                other => other,
+            };
+            details.push(crate::i18n::tr_format!(
+                "status-model-summaries",
+                "summaries {summary}",
+                summary = summary.to_ascii_lowercase()
+            ));
         }
     }
 
@@ -177,7 +207,12 @@ pub(crate) fn format_reset_timestamp(
     if dt.date_naive() == captured_at.date_naive() {
         time
     } else {
-        format!("{time} on {}", dt.format("%-d %b"))
+        crate::i18n::tr_format!(
+            "status-reset-date-time",
+            "{time} on {date}",
+            time = time,
+            date = dt.format("%-d %b")
+        )
     }
 }
 

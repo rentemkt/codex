@@ -261,7 +261,7 @@ pub(crate) fn tool_call_history_cell(
                 resume_end(
                     receiver_thread_id,
                     state,
-                    "Agent resume failed",
+                    crate::i18n::tr!("collab-resume-failed", "Agent resume failed"),
                     &mut agent_metadata,
                 )
             }
@@ -328,10 +328,22 @@ pub(crate) fn sub_agent_activity_history_cell(
 
 fn sub_agent_activity_title(kind: SubAgentActivityKind, agent_path: &str) -> Line<'static> {
     let (prefix, path) = match kind {
-        SubAgentActivityKind::Started => ("Started ", agent_path),
-        SubAgentActivityKind::Interacted => ("Interacted with ", agent_path),
-        SubAgentActivityKind::Interrupted => ("Interrupted ", agent_path),
-        SubAgentActivityKind::Completed => ("Completed ", agent_path),
+        SubAgentActivityKind::Started => (
+            crate::i18n::tr!("collab-started-prefix", "Started "),
+            agent_path,
+        ),
+        SubAgentActivityKind::Interacted => (
+            crate::i18n::tr!("collab-interacted-prefix", "Interacted with "),
+            agent_path,
+        ),
+        SubAgentActivityKind::Interrupted => (
+            crate::i18n::tr!("collab-interrupted-prefix", "Interrupted "),
+            agent_path,
+        ),
+        SubAgentActivityKind::Completed => (
+            crate::i18n::tr!("collab-completed-prefix", "Completed "),
+            agent_path,
+        ),
     };
     title_spans_line(vec![
         Span::from(prefix).bold(),
@@ -347,11 +359,14 @@ fn spawn_end(
 ) -> PlainHistoryCell {
     let title = match new_thread_id {
         Some(thread_id) => title_with_agent(
-            "Spawned",
+            crate::i18n::tr!("collab-spawned", "Spawned"),
             agent_label(thread_id, &agent_metadata(thread_id)),
             spawn_request,
         ),
-        None => title_text("Agent spawn failed"),
+        None => title_text(crate::i18n::tr!(
+            "collab-spawn-failed",
+            "Agent spawn failed"
+        )),
     };
 
     let mut details = Vec::new();
@@ -367,7 +382,7 @@ fn interaction_end(
     agent_metadata: &mut impl FnMut(ThreadId) -> AgentMetadata,
 ) -> PlainHistoryCell {
     let title = title_with_agent(
-        "Sent input to",
+        crate::i18n::tr!("collab-sent-input", "Sent input to"),
         agent_label(receiver_thread_id, &agent_metadata(receiver_thread_id)),
         /*spawn_request*/ None,
     );
@@ -391,12 +406,19 @@ fn waiting_begin(
 
     let title = match receiver_agents.as_slice() {
         [(thread_id, metadata)] => title_with_agent(
-            "Waiting for",
+            crate::i18n::tr!("collab-waiting-for", "Waiting for"),
             agent_label(*thread_id, metadata),
             /*spawn_request*/ None,
         ),
-        [] => title_text("Waiting for agents"),
-        _ => title_text(format!("Waiting for {} agents", receiver_agents.len())),
+        [] => title_text(crate::i18n::tr!(
+            "collab-waiting-agents",
+            "Waiting for agents"
+        )),
+        _ => title_text(crate::i18n::tr_format!(
+            "collab-waiting-count",
+            "Waiting for {count} agents",
+            count = receiver_agents.len()
+        )),
     };
 
     let details = if receiver_agents.len() > 1 {
@@ -417,7 +439,10 @@ fn waiting_end(
     agent_metadata: &mut impl FnMut(ThreadId) -> AgentMetadata,
 ) -> PlainHistoryCell {
     let details = wait_complete_lines(receiver_thread_ids, agents_states, agent_metadata);
-    collab_event(title_text("Finished waiting"), details)
+    collab_event(
+        title_text(crate::i18n::tr!("collab-wait-finished", "Finished waiting")),
+        details,
+    )
 }
 
 fn close_end(
@@ -426,7 +451,7 @@ fn close_end(
 ) -> PlainHistoryCell {
     collab_event(
         title_with_agent(
-            "Closed",
+            crate::i18n::tr!("collab-closed", "Closed"),
             agent_label(receiver_thread_id, &agent_metadata(receiver_thread_id)),
             /*spawn_request*/ None,
         ),
@@ -440,7 +465,7 @@ fn resume_begin(
 ) -> PlainHistoryCell {
     collab_event(
         title_with_agent(
-            "Resuming",
+            crate::i18n::tr!("collab-resuming", "Resuming"),
             agent_label(receiver_thread_id, &agent_metadata(receiver_thread_id)),
             /*spawn_request*/ None,
         ),
@@ -456,7 +481,7 @@ fn resume_end(
 ) -> PlainHistoryCell {
     collab_event(
         title_with_agent(
-            "Resumed",
+            crate::i18n::tr!("collab-resumed", "Resumed"),
             agent_label(receiver_thread_id, &agent_metadata(receiver_thread_id)),
             /*spawn_request*/ None,
         ),
@@ -593,7 +618,10 @@ fn wait_complete_lines(
     entries.extend(extras);
 
     if entries.is_empty() {
-        vec![Line::from(Span::from("No agents completed yet"))]
+        vec![Line::from(Span::from(crate::i18n::tr!(
+            "collab-none-completed",
+            "No agents completed yet"
+        )))]
     } else {
         entries
             .into_iter()
@@ -631,13 +659,22 @@ fn status_summary_line(status: Option<&CollabAgentState>, fallback_error: &str) 
 
 fn status_summary_spans(status: &CollabAgentState) -> Vec<Span<'static>> {
     match status.status {
-        CollabAgentStatus::PendingInit => vec![Span::from("Pending init").fg(accent_color())],
-        CollabAgentStatus::Running => vec![Span::from("Running").fg(accent_color()).bold()],
+        CollabAgentStatus::PendingInit => vec![
+            Span::from(crate::i18n::tr!("collab-pending-init", "Pending init")).fg(accent_color()),
+        ],
+        CollabAgentStatus::Running => vec![
+            Span::from(crate::i18n::tr!("collab-running", "Running"))
+                .fg(accent_color())
+                .bold(),
+        ],
         // Allow `.yellow()`
         #[allow(clippy::disallowed_methods)]
-        CollabAgentStatus::Interrupted => vec![Span::from("Interrupted").yellow()],
+        CollabAgentStatus::Interrupted => {
+            vec![Span::from(crate::i18n::tr!("collab-interrupted", "Interrupted")).yellow()]
+        }
         CollabAgentStatus::Completed => {
-            let mut spans = vec![Span::from("Completed").green()];
+            let mut spans =
+                vec![Span::from(crate::i18n::tr!("collab-completed", "Completed")).green()];
             if let Some(message) = status.message.as_ref() {
                 let message_preview = truncate_text(
                     &message.split_whitespace().collect::<Vec<_>>().join(" "),
@@ -650,16 +687,23 @@ fn status_summary_spans(status: &CollabAgentState) -> Vec<Span<'static>> {
             }
             spans
         }
-        CollabAgentStatus::Errored => {
-            error_summary_spans(status.message.as_deref().unwrap_or("Agent errored"))
+        CollabAgentStatus::Errored => error_summary_spans(
+            status
+                .message
+                .as_deref()
+                .unwrap_or(crate::i18n::tr!("collab-errored", "Agent errored")),
+        ),
+        CollabAgentStatus::Shutdown => {
+            vec![Span::from(crate::i18n::tr!("collab-shutdown", "Shutdown"))]
         }
-        CollabAgentStatus::Shutdown => vec![Span::from("Shutdown")],
-        CollabAgentStatus::NotFound => vec![Span::from("Not found").red()],
+        CollabAgentStatus::NotFound => {
+            vec![Span::from(crate::i18n::tr!("collab-not-found", "Not found")).red()]
+        }
     }
 }
 
 fn error_summary_spans(error: &str) -> Vec<Span<'static>> {
-    let mut spans = vec![Span::from("Error").red()];
+    let mut spans = vec![Span::from(crate::i18n::tr!("keymap-error-label", "Error")).red()];
     let error_preview = truncate_text(
         &error.split_whitespace().collect::<Vec<_>>().join(" "),
         COLLAB_AGENT_ERROR_PREVIEW_GRAPHEMES,

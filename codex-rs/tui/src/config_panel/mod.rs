@@ -34,7 +34,12 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use std::time::Instant;
 
-const RIGHT_CLICK_PASTE_DESCRIPTION: &str = "Paste when nothing is selected, with Auto following platform defaults and On also enabling macOS";
+fn right_click_paste_description() -> &'static str {
+    crate::i18n::tr!(
+        "config-right-click-paste-description",
+        "Paste when nothing is selected, with Auto following platform defaults and On also enabling macOS"
+    )
+}
 
 pub(crate) struct ConfigPanelUpdate {
     pub(crate) tui: Tui,
@@ -138,47 +143,77 @@ impl ConfigEditorHandoff {
 impl ConfigEditor {
     fn value(self, tui: &Tui, status: ConfigPanelStatus) -> ConfigSettingValue {
         let label = match self {
-            Self::Theme => tui.theme.clone().unwrap_or_else(|| "Automatic".to_string()),
+            Self::Theme => tui
+                .theme
+                .clone()
+                .unwrap_or_else(|| crate::i18n::tr!("config-automatic", "Automatic").to_string()),
             Self::SessionPickerLayout => match tui.session_picker_view.unwrap_or_default() {
-                codex_config::types::SessionPickerViewMode::Comfortable => "Comfortable",
-                codex_config::types::SessionPickerViewMode::Dense => "Dense",
+                codex_config::types::SessionPickerViewMode::Comfortable => {
+                    crate::i18n::tr!("config-comfortable", "Comfortable")
+                }
+                codex_config::types::SessionPickerViewMode::Dense => {
+                    crate::i18n::tr!("config-dense", "Dense")
+                }
             }
             .to_string(),
             Self::ResumeDirectory => match tui.resume_cwd {
-                None => "Ask",
-                Some(codex_config::types::ResumeCwdMode::Current) => "Current directory",
-                Some(codex_config::types::ResumeCwdMode::Session) => "Session directory",
+                None => crate::i18n::tr!("config-ask", "Ask"),
+                Some(codex_config::types::ResumeCwdMode::Current) => {
+                    crate::i18n::tr!("config-current-directory", "Current directory")
+                }
+                Some(codex_config::types::ResumeCwdMode::Session) => {
+                    crate::i18n::tr!("config-session-directory", "Session directory")
+                }
             }
             .to_string(),
             Self::CopyOnSelect => match tui.copy_on_select {
-                CopyOnSelect::Auto => format!(
-                    "Auto · {}",
-                    if status.copy_on_select { "On" } else { "Off" }
+                CopyOnSelect::Auto => crate::i18n::tr_format!(
+                    "config-auto-state",
+                    "Auto · {state}",
+                    state = if status.copy_on_select {
+                        crate::i18n::tr!("config-on", "On")
+                    } else {
+                        crate::i18n::tr!("config-off", "Off")
+                    }
                 ),
-                CopyOnSelect::Always => "On".to_string(),
-                CopyOnSelect::Never => "Off".to_string(),
+                CopyOnSelect::Always => crate::i18n::tr!("config-on", "On").to_string(),
+                CopyOnSelect::Never => crate::i18n::tr!("config-off", "Off").to_string(),
             },
             Self::RightClickPaste => {
                 let preference = match tui.right_click_paste {
-                    RightClickPaste::Auto => "Auto",
-                    RightClickPaste::On => "On",
-                    RightClickPaste::Off => "Off",
+                    RightClickPaste::Auto => crate::i18n::tr!("config-auto", "Auto"),
+                    RightClickPaste::On => crate::i18n::tr!("config-on", "On"),
+                    RightClickPaste::Off => crate::i18n::tr!("config-off", "Off"),
                 };
                 match status.right_click_paste {
                     Ok(enabled) if tui.right_click_paste == RightClickPaste::Auto => {
-                        format!("Auto · {}", if enabled { "On" } else { "Off" })
+                        crate::i18n::tr_format!(
+                            "config-auto-state",
+                            "Auto · {state}",
+                            state = if enabled {
+                                crate::i18n::tr!("config-on", "On")
+                            } else {
+                                crate::i18n::tr!("config-off", "Off")
+                            }
+                        )
                     }
                     Ok(_) => preference.to_string(),
-                    Err(_) => format!("{preference} · Unavailable"),
+                    Err(_) => crate::i18n::tr_format!(
+                        "config-preference-unavailable",
+                        "{preference} · Unavailable",
+                        preference = preference
+                    ),
                 }
             }
             Self::NotificationCondition => match tui.notification_settings.condition {
-                NotificationCondition::Unfocused => "Unfocused",
-                NotificationCondition::Always => "Always",
+                NotificationCondition::Unfocused => {
+                    crate::i18n::tr!("config-unfocused", "Unfocused")
+                }
+                NotificationCondition::Always => crate::i18n::tr!("config-always", "Always"),
             }
             .to_string(),
             Self::Effects | Self::StatusLine | Self::TerminalTitle | Self::Keyboard => {
-                "Configure".to_string()
+                crate::i18n::tr!("config-configure", "Configure").to_string()
             }
         };
         ConfigSettingValue::Editor {
@@ -208,11 +243,11 @@ impl ConfigSection {
 
     fn title(self) -> &'static str {
         match self {
-            Self::Appearance => "Appearance",
-            Self::Notifications => "Notifications",
-            Self::Input => "Input",
-            Self::Sessions => "Sessions",
-            Self::TextSelection => "Text selection",
+            Self::Appearance => crate::i18n::tr!("config-appearance", "Appearance"),
+            Self::Notifications => crate::i18n::tr!("config-notifications", "Notifications"),
+            Self::Input => crate::i18n::tr!("config-input", "Input"),
+            Self::Sessions => crate::i18n::tr!("config-sessions", "Sessions"),
+            Self::TextSelection => crate::i18n::tr!("config-text-selection", "Text selection"),
         }
     }
 }
@@ -254,14 +289,23 @@ impl ConfigSettingValue {
                 enabled,
                 dependency_met: true,
                 ..
-            } => if *enabled { "[x] On" } else { "[ ] Off" }.to_string(),
+            } => if *enabled {
+                crate::i18n::tr!("config-checked-on", "[x] On")
+            } else {
+                crate::i18n::tr!("config-unchecked-off", "[ ] Off")
+            }
+            .to_string(),
             Self::Editor { label, .. } => format!("{label} ›"),
-            Self::NotificationTest => "Send in 5s".to_string(),
+            Self::NotificationTest => {
+                crate::i18n::tr!("config-send-in-five", "Send in 5s").to_string()
+            }
             Self::DependentToggle {
                 dependency_met: false,
                 ..
             }
-            | Self::Unavailable { .. } => "Unavailable".to_string(),
+            | Self::Unavailable { .. } => {
+                crate::i18n::tr!("config-unavailable", "Unavailable").to_string()
+            }
         }
     }
 }
@@ -274,22 +318,31 @@ fn settings(tui: &Tui, status: ConfigPanelStatus) -> Vec<ConfigSetting> {
     vec![
         ConfigSetting {
             section: ConfigSection::Appearance,
-            label: "Theme",
-            description: "Choose a syntax color palette with a live preview",
+            label: crate::i18n::tr!("config-theme", "Theme"),
+            description: crate::i18n::tr!(
+                "config-theme-description",
+                "Choose a syntax color palette with a live preview"
+            ),
             keywords: "colors dark light palette",
             value: ConfigEditor::Theme.value(tui, status),
         },
         ConfigSetting {
             section: ConfigSection::Appearance,
-            label: "Effects",
-            description: "Configure animations and composer effects",
+            label: crate::i18n::tr!("config-effects", "Effects"),
+            description: crate::i18n::tr!(
+                "config-effects-description",
+                "Configure animations and composer effects"
+            ),
             keywords: "animations motion accessibility spinner starfield stars composer stars",
             value: ConfigEditor::Effects.value(tui, status),
         },
         ConfigSetting {
             section: ConfigSection::Appearance,
-            label: "Tips",
-            description: "Show helpful shortcuts and suggestions",
+            label: crate::i18n::tr!("config-tips", "Tips"),
+            description: crate::i18n::tr!(
+                "config-tips-description",
+                "Show helpful shortcuts and suggestions"
+            ),
             keywords: "welcome hints tooltips",
             value: ConfigSettingValue::Toggle {
                 setting: ConfigToggle::Tips,
@@ -298,8 +351,11 @@ fn settings(tui: &Tui, status: ConfigPanelStatus) -> Vec<ConfigSetting> {
         },
         ConfigSetting {
             section: ConfigSection::Appearance,
-            label: "Status line colors",
-            description: "Use theme colors for the model, branch, and other status line details",
+            label: crate::i18n::tr!("config-status-colors", "Status line colors"),
+            description: crate::i18n::tr!(
+                "config-status-colors-description",
+                "Use theme colors for the model, branch, and other status line details"
+            ),
             keywords: "statusline footer colour",
             value: ConfigSettingValue::Toggle {
                 setting: ConfigToggle::StatusLineColors,
@@ -308,26 +364,38 @@ fn settings(tui: &Tui, status: ConfigPanelStatus) -> Vec<ConfigSetting> {
         },
         ConfigSetting {
             section: ConfigSection::Appearance,
-            label: "Status line display",
-            description: "Choose and reorder the information below the composer",
+            label: crate::i18n::tr!("config-status-display", "Status line display"),
+            description: crate::i18n::tr!(
+                "config-status-display-description",
+                "Choose and reorder the information below the composer"
+            ),
             keywords: "statusline footer model branch context",
             value: ConfigEditor::StatusLine.value(tui, status),
         },
         ConfigSetting {
             section: ConfigSection::Appearance,
-            label: "Terminal title display",
-            description: "Choose and reorder the information in your terminal tab or window title",
+            label: crate::i18n::tr!("config-title-display", "Terminal title display"),
+            description: crate::i18n::tr!(
+                "config-title-display-description",
+                "Choose and reorder the information in your terminal tab or window title"
+            ),
             keywords: "title tab window name",
             value: ConfigEditor::TerminalTitle.value(tui, status),
         },
         ConfigSetting {
             section: ConfigSection::Notifications,
-            label: "Notifications",
-            description: "Let your terminal notify you when a turn finishes or approval is needed",
+            label: crate::i18n::tr!("config-notifications", "Notifications"),
+            description: crate::i18n::tr!(
+                "config-notifications-description",
+                "Let your terminal notify you when a turn finishes or approval is needed"
+            ),
             keywords: "alerts bell completion approval",
             value: if status.custom_notification_filters {
                 ConfigSettingValue::Unavailable {
-                    reason: "Event-specific notifications are configured in config.toml",
+                    reason: crate::i18n::tr!(
+                        "config-notification-filters",
+                        "Event-specific notifications are configured in config.toml"
+                    ),
                 }
             } else {
                 ConfigSettingValue::Toggle {
@@ -338,35 +406,50 @@ fn settings(tui: &Tui, status: ConfigPanelStatus) -> Vec<ConfigSetting> {
         },
         ConfigSetting {
             section: ConfigSection::Notifications,
-            label: "Notify when",
-            description: "Notify only while you are away or while this terminal is focused too",
+            label: crate::i18n::tr!("config-notify-when", "Notify when"),
+            description: crate::i18n::tr!(
+                "config-notify-when-description",
+                "Notify only while you are away or while this terminal is focused too"
+            ),
             keywords: "focus alerts background always unfocused",
             value: if notifications_enabled {
                 ConfigEditor::NotificationCondition.value(tui, status)
             } else {
                 ConfigSettingValue::Unavailable {
-                    reason: "Turn on notifications to choose when they appear",
+                    reason: crate::i18n::tr!(
+                        "config-notifications-required",
+                        "Turn on notifications to choose when they appear"
+                    ),
                 }
             },
         },
         ConfigSetting {
             section: ConfigSection::Notifications,
-            label: "Test notification",
-            description: "Send in 5 seconds so you can switch apps before the notification appears",
+            label: crate::i18n::tr!("config-test-notification", "Test notification"),
+            description: crate::i18n::tr!(
+                "config-test-notification-description",
+                "Send in 5 seconds so you can switch apps before the notification appears"
+            ),
             keywords: "alerts bell sound test",
             value: ConfigSettingValue::NotificationTest,
         },
         ConfigSetting {
             section: ConfigSection::Input,
-            label: "Keyboard shortcuts",
-            description: "Browse actions and remap their keys",
+            label: crate::i18n::tr!("config-keyboard-shortcuts", "Keyboard shortcuts"),
+            description: crate::i18n::tr!(
+                "config-keyboard-description",
+                "Browse actions and remap their keys"
+            ),
             keywords: "keymap bindings hotkeys",
             value: ConfigEditor::Keyboard.value(tui, status),
         },
         ConfigSetting {
             section: ConfigSection::Input,
-            label: "Start in Vim mode",
-            description: "Start new composers in Vim mode and use /vim for the current composer",
+            label: crate::i18n::tr!("config-start-vim", "Start in Vim mode"),
+            description: crate::i18n::tr!(
+                "config-start-vim-description",
+                "Start new composers in Vim mode and use /vim for the current composer"
+            ),
             keywords: "editor modal normal",
             value: ConfigSettingValue::Toggle {
                 setting: ConfigToggle::StartInVimMode,
@@ -375,8 +458,11 @@ fn settings(tui: &Tui, status: ConfigPanelStatus) -> Vec<ConfigSetting> {
         },
         ConfigSetting {
             section: ConfigSection::Input,
-            label: "Paste detection",
-            description: "Recognize pasted-text bursts and keep multiline input together",
+            label: crate::i18n::tr!("config-paste-detection", "Paste detection"),
+            description: crate::i18n::tr!(
+                "config-paste-detection-description",
+                "Recognize pasted-text bursts and keep multiline input together"
+            ),
             keywords: "burst clipboard multiline",
             value: ConfigSettingValue::Toggle {
                 setting: ConfigToggle::PasteDetection,
@@ -385,8 +471,11 @@ fn settings(tui: &Tui, status: ConfigPanelStatus) -> Vec<ConfigSetting> {
         },
         ConfigSetting {
             section: ConfigSection::Sessions,
-            label: "Automatic recaps",
-            description: "Prepare recaps while the terminal is unfocused",
+            label: crate::i18n::tr!("config-automatic-recaps", "Automatic recaps"),
+            description: crate::i18n::tr!(
+                "config-automatic-recaps-description",
+                "Prepare recaps while the terminal is unfocused"
+            ),
             keywords: "summary background",
             value: ConfigSettingValue::Toggle {
                 setting: ConfigToggle::AutomaticRecaps,
@@ -395,44 +484,59 @@ fn settings(tui: &Tui, status: ConfigPanelStatus) -> Vec<ConfigSetting> {
         },
         ConfigSetting {
             section: ConfigSection::Sessions,
-            label: "Session picker layout",
-            description: "Choose tighter rows or a roomier list when resuming and forking conversations",
+            label: crate::i18n::tr!("config-session-layout", "Session picker layout"),
+            description: crate::i18n::tr!(
+                "config-session-layout-description",
+                "Choose tighter rows or a roomier list when resuming and forking conversations"
+            ),
             keywords: "dense comfortable spacing resume fork",
             value: ConfigEditor::SessionPickerLayout.value(tui, status),
         },
         ConfigSetting {
             section: ConfigSection::Sessions,
-            label: "Resume directory",
-            description: "Choose which working directory to use when the current directory and saved session differ",
+            label: crate::i18n::tr!("config-resume-directory", "Resume directory"),
+            description: crate::i18n::tr!(
+                "config-resume-directory-description",
+                "Choose which working directory to use when the current directory and saved session differ"
+            ),
             keywords: "cwd folder path fork ask",
             value: ConfigEditor::ResumeDirectory.value(tui, status),
         },
         ConfigSetting {
             section: ConfigSection::TextSelection,
-            label: "Copy on select",
-            description: "Copy transcript, footer, and composer selections on release; Auto follows terminal defaults",
+            label: crate::i18n::tr!("config-copy-on-select", "Copy on select"),
+            description: crate::i18n::tr!(
+                "config-copy-description",
+                "Copy transcript, footer, and composer selections on release; Auto follows terminal defaults"
+            ),
             keywords: "clipboard mouse selection automatic drag",
             value: ConfigEditor::CopyOnSelect.value(tui, status),
         },
         ConfigSetting {
             section: ConfigSection::TextSelection,
-            label: "Deselect after copy",
-            description: "Remove read-only transcript and footer highlights after automatic copy succeeds",
+            label: crate::i18n::tr!("config-deselect", "Deselect after copy"),
+            description: crate::i18n::tr!(
+                "config-deselect-description",
+                "Remove read-only transcript and footer highlights after automatic copy succeeds"
+            ),
             keywords: "clipboard deselect clear highlight automatic mouse selection",
             value: ConfigSettingValue::DependentToggle {
                 setting: ConfigToggle::CopyOnSelectClearSelection,
                 enabled: ConfigToggle::CopyOnSelectClearSelection.enabled(tui),
                 dependency_met: status.copy_on_select,
-                unavailable_reason: "Turn on Copy on select to deselect after copying",
+                unavailable_reason: crate::i18n::tr!(
+                    "config-copy-required",
+                    "Turn on Copy on select to deselect after copying"
+                ),
             },
         },
         ConfigSetting {
             section: ConfigSection::TextSelection,
-            label: "Right-click paste",
+            label: crate::i18n::tr!("config-right-click-paste", "Right-click paste"),
             description: status
                 .right_click_paste
                 .err()
-                .unwrap_or(RIGHT_CLICK_PASTE_DESCRIPTION),
+                .unwrap_or_else(right_click_paste_description),
             keywords: "clipboard mouse paste automatic",
             value: ConfigEditor::RightClickPaste.value(tui, status),
         },

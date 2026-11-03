@@ -310,7 +310,7 @@ impl App {
                 ..Default::default()
             },
             SelectionItem {
-                name: "Cancel".to_string(),
+                name: crate::i18n::tr!("permissions-cancel", "Cancel").to_string(),
                 description: Some("Keep the current goal".to_string()),
                 dismiss_on_select: true,
                 ..Default::default()

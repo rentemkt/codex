@@ -122,11 +122,11 @@ impl AgentsOverviewView {
                         style,
                     );
                     let label = if state.loading {
-                        "Loading more…"
+                        crate::i18n::tr!("agents-loading-more", "Loading more…")
                     } else if state.refresh_failed {
-                        "Show more (retry)"
+                        crate::i18n::tr!("agents-show-more-retry", "Show more (retry)")
                     } else {
-                        "Show more"
+                        crate::i18n::tr!("agents-show-more", "Show more")
                     };
                     let marker = if selected { "›" } else { " " };
                     line(
@@ -141,7 +141,7 @@ impl AgentsOverviewView {
             let rect = row(viewport, offset as u16, /*height*/ 1);
             if matches!(entry, CenterRow::Group(_)) {
                 let group = if self.is_pinned(index) {
-                    "Pinned".to_owned()
+                    crate::i18n::tr!("agents-pinned", "Pinned").to_owned()
                 } else {
                     match state.grouping {
                         AgentsOverviewGrouping::Project => {

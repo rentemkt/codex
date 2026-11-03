@@ -266,7 +266,11 @@ impl App {
             )));
         self.app_event_tx.send(AppEvent::InsertHistoryCell(Box::new(
             history_cell::new_info_event(
-                format!("Permissions updated to {display_label}"),
+                crate::i18n::tr_format!(
+                    "permissions-updated",
+                    "Permissions updated to {label}",
+                    label = display_label
+                ),
                 /*hint*/ None,
             ),
         )));
@@ -759,7 +763,10 @@ impl App {
                         serde_json::json!(auto_review_preset.approvals_reviewer.to_string()),
                     ));
                     if previous_approvals_reviewer != auto_review_preset.approvals_reviewer {
-                        permissions_history_label = Some("Approve for me");
+                        permissions_history_label = Some(crate::i18n::tr!(
+                            "permissions-approve-for-me",
+                            "Approve for me"
+                        ));
                     }
                 } else if !effective_enabled {
                     feature_edits.push(crate::config_update::clear_config_value(
@@ -767,7 +774,10 @@ impl App {
                     ));
                     feature_config.approvals_reviewer = ApprovalsReviewer::User;
                     if previous_approvals_reviewer != ApprovalsReviewer::User {
-                        permissions_history_label = Some("Ask for approval");
+                        permissions_history_label = Some(crate::i18n::tr!(
+                            "permissions-ask-for-approval",
+                            "Ask for approval"
+                        ));
                     }
                 }
                 approvals_reviewer_override = Some(feature_config.approvals_reviewer);
@@ -948,7 +958,11 @@ impl App {
 
         if let Some(label) = permissions_history_label {
             self.chat_widget.add_info_message(
-                format!("Permissions updated to {label}"),
+                crate::i18n::tr_format!(
+                    "permissions-updated",
+                    "Permissions updated to {label}",
+                    label = label
+                ),
                 /*hint*/ None,
             );
         }
@@ -1060,7 +1074,9 @@ impl App {
 
     pub(super) fn reasoning_label(reasoning_effort: Option<&ReasoningEffortConfig>) -> String {
         match reasoning_effort {
-            None | Some(ReasoningEffortConfig::None) => "default".to_string(),
+            None | Some(ReasoningEffortConfig::None) => {
+                crate::i18n::tr!("selection-marker-default", "default").to_string()
+            }
             Some(reasoning_effort) => reasoning_effort.as_str().to_string(),
         }
     }

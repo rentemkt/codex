@@ -318,9 +318,17 @@ pub(crate) fn build_keymap_action_menu_params(
     if action != "leader" {
         let leader_available = !runtime_keymap.chords.leader.is_empty();
         items.push(SelectionItem {
-            name: "Use leader...".to_string(),
-            description: Some("Capture the key that follows the configured leader".to_string()),
-            disabled_reason: (!leader_available).then(|| "The leader is unbound".to_string()),
+            name: crate::i18n::tr!("keymap-use-leader", "Use leader...").to_string(),
+            description: Some(
+                crate::i18n::tr!(
+                    "keymap-use-leader-description",
+                    "Capture the key that follows the configured leader"
+                )
+                .to_string(),
+            ),
+            disabled_reason: (!leader_available).then(|| {
+                crate::i18n::tr!("keymap-leader-unbound", "The leader is unbound").to_string()
+            }),
             actions: vec![open_capture_action(
                 context.clone(),
                 action.clone(),
@@ -331,8 +339,15 @@ pub(crate) fn build_keymap_action_menu_params(
         });
         if !leader_available {
             items.push(SelectionItem {
-                name: "Configure leader...".to_string(),
-                description: Some("Set a leader before assigning this shortcut".to_string()),
+                name: crate::i18n::tr!("keymap-configure-leader", "Configure leader...")
+                    .to_string(),
+                description: Some(
+                    crate::i18n::tr!(
+                        "keymap-configure-leader-description",
+                        "Set a leader before assigning this shortcut"
+                    )
+                    .to_string(),
+                ),
                 actions: vec![Box::new(|tx| {
                     tx.send(AppEvent::OpenKeymapActionMenu {
                         context: "global".to_string(),
@@ -861,9 +876,11 @@ fn key_parts_to_config_key_spec(
     let supported_modifiers =
         KeyModifiers::CONTROL | KeyModifiers::ALT | KeyModifiers::SHIFT | KeyModifiers::SUPER;
     if !modifiers.difference(supported_modifiers).is_empty() {
-        return Err(
-            "Only ctrl, alt, shift, and super modifiers can be stored in `tui.keymap`.".to_string(),
-        );
+        return Err(crate::i18n::tr!(
+            "keymap-error-modifiers-with-super",
+            "Only ctrl, alt, shift, and super modifiers can be stored in `tui.keymap`."
+        )
+        .to_string());
     }
 
     let key = match code {

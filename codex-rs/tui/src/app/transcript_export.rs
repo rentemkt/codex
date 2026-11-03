@@ -272,11 +272,17 @@ fn render_markdown_transcript(cells: &[Arc<dyn HistoryCell>]) -> Result<String, 
         } else if cell.as_any().is::<AgentMarkdownCell>() {
             ("Assistant", false)
         } else if cell.as_any().is::<ProposedPlanCell>() {
-            ("Plan", false)
+            (crate::i18n::tr!("analytics-plan", "Plan"), false)
         } else if cell.as_any().is::<ReasoningSummaryCell>() {
-            ("Reasoning", false)
+            (
+                crate::i18n::tr!("title-item-reasoning-name", "Reasoning"),
+                false,
+            )
         } else {
-            ("Activity", true)
+            (
+                crate::i18n::tr!("title-item-activity-name", "Activity"),
+                true,
+            )
         };
         markdown.push_str(&format!("\n## {heading}\n\n"));
         for line in lines {

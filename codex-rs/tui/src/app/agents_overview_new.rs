@@ -176,17 +176,32 @@ impl App {
                     Some(TypedRequestError::Server { source, .. })
                         if is_server_shutting_down_error(source)
                 ) {
-                    let mut message = String::from(
-                        "New sessions are paused while active turns finish or are canceled. The default shutdown wait is up to one minute.",
-                    );
+                    let mut message = String::from(crate::i18n::tr!(
+                        "agents-server-shutdown-wait",
+                        "New sessions are paused while active turns finish or are canceled. The default shutdown wait is up to one minute."
+                    ));
                     if !matches!(self.app_server_target, AppServerTarget::Embedded) {
-                        message.push_str(
-                            " If the server restarts, Codex will reconnect automatically.",
-                        );
+                        message.push_str(crate::i18n::tr!(
+                            "agents-server-auto-reconnect",
+                            " If the server restarts, Codex will reconnect automatically."
+                        ));
                     }
-                    (Some("Codex's background server is shutting down"), message)
+                    (
+                        Some(crate::i18n::tr!(
+                            "agents-server-shutting-down",
+                            "Codex's background server is shutting down"
+                        )),
+                        message,
+                    )
                 } else {
-                    (None, format!("Failed to start session: {error}"))
+                    (
+                        None,
+                        crate::i18n::tr_format!(
+                            "agents-start-session-failed",
+                            "Failed to start session: {error}",
+                            error = error
+                        ),
+                    )
                 };
                 if let Some((_, checkout)) = &managed_worktree {
                     self.agents_overview_retained_worktree_error(checkout, title, message);

@@ -981,19 +981,19 @@ pub(super) async fn fetch_additional_plugin_remote_sections(
     if !remote_plugin_enabled {
         sections.push((
             "vertical",
-            "OpenAI Curated",
+            crate::i18n::tr!("plugins-openai-curated-label", "OpenAI Curated"),
             vec![PluginListMarketplaceKind::Vertical],
         ));
     }
     sections.push((
         "workspace",
-        "Workspace",
+        crate::i18n::tr!("plugins-workspace-label", "Workspace"),
         vec![PluginListMarketplaceKind::WorkspaceDirectory],
     ));
     if plugin_sharing_enabled {
         sections.push((
             "shared-with-me",
-            "Shared with me",
+            crate::i18n::tr!("plugins-shared-with-me-label", "Shared with me"),
             vec![PluginListMarketplaceKind::SharedWithMe],
         ));
     } else {
@@ -1062,7 +1062,10 @@ fn plugin_remote_section_error_next_step(label: &str, err: &str) -> &'static str
         "Try again later; local plugin functionality is still available"
     } else if err.contains("disabled by admin") || err.contains("admin disabled") {
         "Ask a workspace admin to confirm plugin access"
-    } else if label == "Shared with me" && err.contains("plugin") && err.contains("disabled") {
+    } else if label == crate::i18n::tr!("plugins-shared-with-me-label", "Shared with me")
+        && err.contains("plugin")
+        && err.contains("disabled")
+    {
         "Ask the sharer or a workspace admin to confirm plugin access"
     } else {
         ""
@@ -1072,7 +1075,7 @@ fn plugin_remote_section_error_next_step(label: &str, err: &str) -> &'static str
 fn plugin_sharing_disabled_remote_section_error() -> PluginRemoteSectionError {
     PluginRemoteSectionError {
         section_id: "shared-with-me".to_string(),
-        label: "Shared with me".to_string(),
+        label: crate::i18n::tr!("plugins-shared-with-me-label", "Shared with me").to_string(),
         message: "Enable plugin sharing for this Codex session to load shared plugins".to_string(),
     }
 }

@@ -103,6 +103,13 @@ impl RateLimitWarningState {
 pub(crate) fn limit_label_for_window(window_minutes: Option<i64>, is_secondary: bool) -> String {
     window_minutes
         .and_then(get_limits_duration)
+        .map(|label| match label.as_str() {
+            "daily" => crate::i18n::tr!("status-window-daily", "daily").to_string(),
+            "weekly" => crate::i18n::tr!("status-window-weekly", "weekly").to_string(),
+            "monthly" => crate::i18n::tr!("status-window-monthly", "monthly").to_string(),
+            "annual" => crate::i18n::tr!("status-window-annual", "annual").to_string(),
+            _ => label,
+        })
         .unwrap_or_else(|| fallback_limit_label(is_secondary).to_string())
 }
 
@@ -132,10 +139,15 @@ pub(crate) fn get_limits_duration(windows_minutes: i64) -> Option<String> {
 }
 
 pub(crate) fn fallback_limit_label(is_secondary: bool) -> &'static str {
-    if is_secondary {
+    let label = if is_secondary {
         SECONDARY_LIMIT_FALLBACK_LABEL
     } else {
         PRIMARY_LIMIT_FALLBACK_LABEL
+    };
+    match label {
+        "secondary usage" => crate::i18n::tr!("status-window-secondary-usage", "secondary usage"),
+        "usage" => crate::i18n::tr!("status-window-usage", "usage"),
+        _ => label,
     }
 }
 

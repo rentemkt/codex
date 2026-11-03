@@ -137,7 +137,9 @@ impl Renderable for AgentsOverviewView {
         };
         let grouping = match state.grouping {
             AgentsOverviewGrouping::Project => crate::i18n::tr!("ui-project", "Project"),
-            AgentsOverviewGrouping::Directory => "Directory",
+            AgentsOverviewGrouping::Directory => {
+                crate::i18n::tr!("status-card-directory-label", "Directory")
+            }
             AgentsOverviewGrouping::Status => crate::i18n::tr!("ui-status", "Status"),
             AgentsOverviewGrouping::Model => crate::i18n::tr!("ui-model", "Model"),
         };
@@ -235,12 +237,16 @@ impl Renderable for AgentsOverviewView {
             })
             .or_else(|| {
                 state.removal.map(|action| match action {
-                    AgentsOverviewAction::Archive => {
-                        "Archiving task…  You can still browse.".to_owned()
-                    }
-                    AgentsOverviewAction::Delete => {
-                        "Deleting task…  You can still browse.".to_owned()
-                    }
+                    AgentsOverviewAction::Archive => crate::i18n::tr!(
+                        "agents-archiving-browsable",
+                        "Archiving task…  You can still browse."
+                    )
+                    .to_owned(),
+                    AgentsOverviewAction::Delete => crate::i18n::tr!(
+                        "agents-deleting-browsable",
+                        "Deleting task…  You can still browse."
+                    )
+                    .to_owned(),
                 })
             })
             .or_else(|| {

@@ -19,7 +19,11 @@ impl App {
             Ok(()) => {
                 self.local_settings.tui.fullscreen_transcript = enabled;
                 self.chat_widget.local_settings.tui.fullscreen_transcript = enabled;
-                let mode = if enabled { "Fullscreen" } else { "Scrollback" };
+                let mode = if enabled {
+                    crate::i18n::tr!("tui-mode-fullscreen", "Fullscreen")
+                } else {
+                    crate::i18n::tr!("tui-mode-scrollback", "Scrollback")
+                };
                 self.chat_widget.add_info_message(
                     format!("Saved TUI mode: {mode}. Restart Codex to apply; launch overrides still apply."),
                     /*hint*/ None,

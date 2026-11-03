@@ -28,10 +28,18 @@ const REASONING_ORDER: [&str; 8] = [
     "Ultra",
 ];
 const SPEED_ORDER: [&str; 3] = ["Fast mode", "Ultrafast", "Standard"];
-const MODELS_LABEL: &str = "  Models";
-const REASONING_LABEL: &str = "  Reasoning";
-const SPEED_LABEL: &str = "  Speed";
-const BILLED_TOKENS_LABEL: &str = "  Billed tokens";
+fn models_label() -> &'static str {
+    crate::i18n::tr!("status-thread-models", "  Models")
+}
+fn reasoning_label() -> &'static str {
+    crate::i18n::tr!("status-thread-reasoning", "  Reasoning")
+}
+fn speed_label() -> &'static str {
+    crate::i18n::tr!("status-thread-speed", "  Speed")
+}
+fn billed_tokens_label() -> &'static str {
+    crate::i18n::tr!("status-thread-billed-tokens", "  Billed tokens")
+}
 
 /// ENT26 is billed directly in dollars; missing native usage is not a zero estimate.
 pub(crate) fn thread_cost_micros(usage: &ThreadUsage, plan_type: Option<PlanType>) -> Option<i64> {
@@ -68,7 +76,7 @@ impl StatusThreadUsage {
         // Keep existing card rows stable when asynchronous billing details arrive. Reserving a
         // formatter label does not emit a loading placeholder or an empty billing row.
         if self.reserve_label_width.load(Ordering::Relaxed) {
-            push_label(labels, seen, BILLED_TOKENS_LABEL);
+            push_label(labels, seen, billed_tokens_label());
         }
         #[expect(clippy::expect_used)]
         let stored_estimate = self
@@ -78,17 +86,21 @@ impl StatusThreadUsage {
         let Some(estimate) = stored_estimate.as_ref() else {
             return;
         };
-        push_label(labels, seen, "Thread usage");
+        push_label(
+            labels,
+            seen,
+            crate::i18n::tr!("status-thread-usage", "Thread usage"),
+        );
         if !estimate.groups.is_empty() {
-            push_label(labels, seen, MODELS_LABEL);
-            push_label(labels, seen, REASONING_LABEL);
-            push_label(labels, seen, SPEED_LABEL);
+            push_label(labels, seen, models_label());
+            push_label(labels, seen, reasoning_label());
+            push_label(labels, seen, speed_label());
             if estimate
                 .groups
                 .iter()
                 .any(|group| group.input_tokens.is_some() || group.output_tokens.is_some())
             {
-                push_label(labels, seen, BILLED_TOKENS_LABEL);
+                push_label(labels, seen, billed_tokens_label());
             }
         }
     }
@@ -112,12 +124,24 @@ impl StatusThreadUsage {
             // Credit-weighted breakdowns do not describe native dollar usage.
             return thread_cost_micros(estimate, plan_type)
                 .and_then(format_estimated_usd_micros)
-                .map(|cost| vec![formatter.line("Thread usage", vec![cost.into()])])
+                .map(|cost| {
+                    vec![formatter.line(
+                        crate::i18n::tr!("status-thread-usage", "Thread usage"),
+                        vec![cost.into()],
+                    )]
+                })
                 .unwrap_or_default();
         }
 
         let credits_micros = estimate.estimated_usage_credits_micros;
-        let mut usage = vec![format!("{} credits", format_credit_micros(credits_micros)).into()];
+        let mut usage = vec![
+            crate::i18n::tr_format!(
+                "status-credit-balance",
+                "{balance} credits",
+                balance = format_credit_micros(credits_micros)
+            )
+            .into(),
+        ];
         if let Some(cost) = estimate
             .estimated_usage_usd_micros
             .and_then(format_estimated_usd_micros)
@@ -125,12 +149,15 @@ impl StatusThreadUsage {
             usage.push(" · ".dim());
             usage.push(cost.into());
         }
-        let mut lines = vec![formatter.line("Thread usage", usage)];
+        let mut lines = vec![formatter.line(
+            crate::i18n::tr!("status-thread-usage", "Thread usage"),
+            usage,
+        )];
 
         for (label, dimension) in [
-            (MODELS_LABEL, BreakdownDimension::Model),
-            (REASONING_LABEL, BreakdownDimension::Reasoning),
-            (SPEED_LABEL, BreakdownDimension::Speed),
+            (models_label(), BreakdownDimension::Model),
+            (reasoning_label(), BreakdownDimension::Reasoning),
+            (speed_label(), BreakdownDimension::Speed),
         ] {
             let Some(value) = grouped_usage(&estimate.groups, dimension) else {
                 continue;
@@ -160,18 +187,30 @@ impl StatusThreadUsage {
         if !estimate.groups.is_empty() && (input_tokens.is_some() || output_tokens.is_some()) {
             let mut tokens = Vec::new();
             if let Some(input_tokens) = input_tokens {
-                tokens.push(format!("{} input", format_tokens_compact(input_tokens)));
+                tokens.push(crate::i18n::tr_format!(
+                    "status-billed-input",
+                    "{tokens} input",
+                    tokens = format_tokens_compact(input_tokens)
+                ));
                 if let Some(cached_tokens) = cached_tokens {
-                    tokens.push(format!("({} cached)", format_tokens_compact(cached_tokens)));
+                    tokens.push(crate::i18n::tr_format!(
+                        "status-billed-cached",
+                        "({tokens} cached)",
+                        tokens = format_tokens_compact(cached_tokens)
+                    ));
                 }
             }
             if let Some(output_tokens) = output_tokens {
                 if !tokens.is_empty() {
                     tokens.push("+".to_string());
                 }
-                tokens.push(format!("{} output", format_tokens_compact(output_tokens)));
+                tokens.push(crate::i18n::tr_format!(
+                    "status-billed-output",
+                    "{tokens} output",
+                    tokens = format_tokens_compact(output_tokens)
+                ));
             }
-            lines.push(formatter.line(BILLED_TOKENS_LABEL, vec![tokens.join(" ").into()]));
+            lines.push(formatter.line(billed_tokens_label(), vec![tokens.join(" ").into()]));
         }
 
         lines
@@ -199,7 +238,7 @@ fn grouped_usage(
                 .model
                 .as_deref()
                 .map(format_model_display_name)
-                .unwrap_or_else(|| "Other".to_string()),
+                .unwrap_or_else(|| crate::i18n::tr!("status-other", "Other").to_string()),
             BreakdownDimension::Reasoning => match group.reasoning_effort.as_deref() {
                 Some("none") => "None",
                 Some("minimal") => "Minimal",
@@ -274,7 +313,28 @@ fn grouped_usage(
                     (i128::from(credits) * 100 + i128::from(total_credits_micros) / 2)
                         / i128::from(total_credits_micros)
                 };
-                format!("{name} {percentage}%")
+                let label = if matches!(dimension, BreakdownDimension::Model) {
+                    name.as_str()
+                } else {
+                    match name.as_str() {
+                        "None" => crate::i18n::tr!("reasoning-effort-none", "None"),
+                        "Minimal" => crate::i18n::tr!("reasoning-effort-minimal", "Minimal"),
+                        "Light" => crate::i18n::tr!("status-reasoning-light", "Light"),
+                        "Medium" => crate::i18n::tr!("reasoning-effort-medium", "Medium"),
+                        "High" => crate::i18n::tr!("reasoning-effort-high", "High"),
+                        "Extra High" => {
+                            crate::i18n::tr!("status-reasoning-extra-high", "Extra High")
+                        }
+                        "Max" => crate::i18n::tr!("reasoning-effort-max", "Max"),
+                        "Ultra" => crate::i18n::tr!("reasoning-effort-ultra", "Ultra"),
+                        "Fast mode" => crate::i18n::tr!("status-speed-fast", "Fast mode"),
+                        "Ultrafast" => crate::i18n::tr!("status-speed-ultrafast", "Ultrafast"),
+                        "Standard" => crate::i18n::tr!("status-speed-standard", "Standard"),
+                        "Other" => crate::i18n::tr!("status-other", "Other"),
+                        other => other,
+                    }
+                };
+                format!("{label} {percentage}%")
             })
             .collect::<Vec<_>>()
             .join(", "),

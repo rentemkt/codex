@@ -104,8 +104,11 @@ impl App {
             },
             Err(err) => {
                 let path_display = target_session.display_label();
-                self.add_session_picker_error(format!(
-                    "Failed to resume session from {path_display}: {err}"
+                self.add_session_picker_error(crate::i18n::tr_format!(
+                    "resume-session-failed",
+                    "Failed to resume session from {path}: {error}",
+                    path = path_display,
+                    error = err
                 ));
                 return Err(AppRunControl::Continue);
             }

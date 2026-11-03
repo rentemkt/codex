@@ -27,7 +27,7 @@ const STATUS_LIMIT_BAR_EMPTY: &str = "░";
 
 #[derive(Debug, Clone)]
 pub(crate) struct StatusRateLimitRow {
-    /// Human-readable row label, such as `"5h limit"`, `"Monthly limit"`, or `"Credits"`.
+    /// Human-readable row label, such as `"5h limit"`, `"Monthly limit"`, or `crate::i18n::tr!("status-credits", "Credits")`.
     pub label: String,
     /// Value payload for the row.
     pub value: StatusRateLimitValue,
@@ -276,24 +276,30 @@ pub(crate) fn compose_rate_limit_data_many(
 
         if show_limit_prefix && !combine_non_codex_single_limit {
             rows.push(StatusRateLimitRow {
-                label: format!("{limit_bucket_label} limit"),
+                label: crate::i18n::tr_format!(
+                    "status-bucket-limit",
+                    "{bucket} limit",
+                    bucket = limit_bucket_label
+                ),
                 value: StatusRateLimitValue::Text(String::new()),
             });
         }
 
         if let Some(primary) = snapshot.primary.as_ref() {
             let label = if combine_non_codex_single_limit {
-                format!(
-                    "{} {} limit",
-                    limit_bucket_label,
-                    primary_label.clone().unwrap_or_else(|| capitalize_first(
+                crate::i18n::tr_format!(
+                    "status-window-bucket-limit",
+                    "{bucket} {window} limit",
+                    bucket = &limit_bucket_label,
+                    window = primary_label.clone().unwrap_or_else(|| capitalize_first(
                         fallback_limit_label(/*is_secondary*/ false)
                     ))
                 )
             } else {
-                format!(
-                    "{} limit",
-                    primary_label.clone().unwrap_or_else(|| capitalize_first(
+                crate::i18n::tr_format!(
+                    "status-window-limit",
+                    "{window} limit",
+                    window = primary_label.clone().unwrap_or_else(|| capitalize_first(
                         fallback_limit_label(/*is_secondary*/ false)
                     ))
                 )
@@ -310,17 +316,19 @@ pub(crate) fn compose_rate_limit_data_many(
 
         if let Some(secondary) = snapshot.secondary.as_ref() {
             let label = if combine_non_codex_single_limit {
-                format!(
-                    "{} {} limit",
-                    limit_bucket_label,
-                    secondary_label.clone().unwrap_or_else(|| capitalize_first(
+                crate::i18n::tr_format!(
+                    "status-window-bucket-limit",
+                    "{bucket} {window} limit",
+                    bucket = &limit_bucket_label,
+                    window = secondary_label.clone().unwrap_or_else(|| capitalize_first(
                         fallback_limit_label(/*is_secondary*/ true)
                     ))
                 )
             } else {
-                format!(
-                    "{} limit",
-                    secondary_label.clone().unwrap_or_else(|| capitalize_first(
+                crate::i18n::tr_format!(
+                    "status-window-limit",
+                    "{window} limit",
+                    window = secondary_label.clone().unwrap_or_else(|| capitalize_first(
                         fallback_limit_label(/*is_secondary*/ true)
                     ))
                 )
@@ -340,13 +348,16 @@ pub(crate) fn compose_rate_limit_data_many(
         }
         if let Some(individual_limit) = snapshot.individual_limit.as_ref() {
             rows.push(StatusRateLimitRow {
-                label: "Monthly credit limit".to_string(),
+                label: crate::i18n::tr!("status-monthly-credit-limit", "Monthly credit limit")
+                    .to_string(),
                 value: StatusRateLimitValue::Window {
                     percent_used: 100.0 - individual_limit.percent_remaining,
                     resets_at: individual_limit.resets_at.clone(),
-                    details: Some(format!(
-                        "{} of {} credits used",
-                        individual_limit.used, individual_limit.limit
+                    details: Some(crate::i18n::tr_format!(
+                        "status-used-credits",
+                        "{used} of {limit} credits used",
+                        used = &individual_limit.used,
+                        limit = &individual_limit.limit
                     )),
                 },
             });
@@ -385,7 +396,11 @@ pub(crate) fn render_limit_progress_bar(percent_remaining: f64, segments: usize)
 
 /// Formats a compact textual summary from remaining percentage.
 pub(crate) fn format_status_limit_summary(percent_remaining: f64) -> String {
-    format!("{percent_remaining:.0}% left")
+    crate::i18n::tr_format!(
+        "status-remaining-percent",
+        "{percent}% left",
+        percent = format!("{percent_remaining:.0}")
+    )
 }
 
 /// Builds a single `StatusRateLimitRow` when workspace credits are available.
@@ -394,8 +409,10 @@ pub(crate) fn format_status_limit_summary(percent_remaining: f64) -> String {
 fn credit_status_row(credits: &CreditsSnapshotDisplay) -> Option<StatusRateLimitRow> {
     if credits.unlimited {
         return Some(StatusRateLimitRow {
-            label: "Credits".to_string(),
-            value: StatusRateLimitValue::Text("Unlimited".to_string()),
+            label: crate::i18n::tr!("status-credits", "Credits").to_string(),
+            value: StatusRateLimitValue::Text(
+                crate::i18n::tr!("status-unlimited", "Unlimited").to_string(),
+            ),
         });
     }
     if !credits.has_credits {
@@ -406,11 +423,17 @@ fn credit_status_row(credits: &CreditsSnapshotDisplay) -> Option<StatusRateLimit
         .as_deref()
         .and_then(format_credit_balance)
         .map_or_else(
-            || "Available".to_string(),
-            |display_balance| format!("{display_balance} credits"),
+            || crate::i18n::tr!("status-available", "Available").to_string(),
+            |display_balance| {
+                crate::i18n::tr_format!(
+                    "status-credit-balance",
+                    "{balance} credits",
+                    balance = display_balance
+                )
+            },
         );
     Some(StatusRateLimitRow {
-        label: "Credits".to_string(),
+        label: crate::i18n::tr!("status-credits", "Credits").to_string(),
         value: StatusRateLimitValue::Text(value),
     })
 }

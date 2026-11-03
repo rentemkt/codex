@@ -206,9 +206,9 @@ impl AnalyticsView {
         if self.zoomed {
             lines.push(columns(
                 match section {
-                    Section::Plugins => "Plugin",
-                    Section::Skills => "Skill",
-                    Section::Chats => "Chat",
+                    Section::Plugins => crate::i18n::tr!("hooks-source-plugin", "Plugin"),
+                    Section::Skills => crate::i18n::tr!("mention-type-skill", "Skill"),
+                    Section::Chats => crate::i18n::tr!("keymap-context-chat-label", "Chat"),
                     Section::Summary
                     | Section::Usage
                     | Section::Credits

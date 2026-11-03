@@ -156,10 +156,19 @@ impl App {
                 }
             }
             Err(error) => {
-                self.add_agents_overview_error(format!(
-                    "Failed to {} task: {error}",
-                    if pinned { "pin" } else { "unpin" }
-                ));
+                self.add_agents_overview_error(if pinned {
+                    crate::i18n::tr_format!(
+                        "agents-pin-failed",
+                        "Failed to pin task: {error}",
+                        error = &error
+                    )
+                } else {
+                    crate::i18n::tr_format!(
+                        "agents-unpin-failed",
+                        "Failed to unpin task: {error}",
+                        error = &error
+                    )
+                });
             }
         }
         let restore_show_more = self.agents_overview.refresh_show_more;
@@ -428,12 +437,16 @@ impl App {
             }
         }
         if let Err(error) = result {
-            let verb = match action {
-                AgentsOverviewAction::Archive => "archive",
-                AgentsOverviewAction::Delete => "delete",
+            let action_error = match action {
+                AgentsOverviewAction::Archive => {
+                    crate::i18n::tr!("agents-archive-failed", "Could not archive task")
+                }
+                AgentsOverviewAction::Delete => {
+                    crate::i18n::tr!("agents-delete-failed", "Could not delete task")
+                }
             };
             let mut header = vec![
-                format!("Could not {verb} task").red().bold().into(),
+                action_error.red().bold().into(),
                 format!("{error:#}").red().into(),
             ];
             if attempted {

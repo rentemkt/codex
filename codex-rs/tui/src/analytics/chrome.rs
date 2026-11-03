@@ -97,13 +97,15 @@ impl AnalyticsView {
 
     pub(super) fn help_lines(&self, width: usize) -> Vec<Line<'static>> {
         let mut controls = vec![
-            format!(
-                "Tab / {} · next / previous report",
-                crate::key_hint::shift(crossterm::event::KeyCode::Tab).display_label()
+            crate::i18n::tr_format!(
+                "analytics-help-reports-shortcut",
+                "Tab / {previous} · next / previous report",
+                previous = crate::key_hint::shift(crossterm::event::KeyCode::Tab).display_label()
             ),
-            format!(
-                "1–{} · open a report directly",
-                self.visible_sections().len()
+            crate::i18n::tr_format!(
+                "analytics-help-report-number",
+                "1–{value} · open a report directly",
+                value = self.visible_sections().len()
             ),
             crate::i18n::tr_format!(
                 "analytics-help-chart-selection",
@@ -173,10 +175,11 @@ impl AnalyticsView {
                 "z · dashboard / focused report; {value} · focus dashboard card",
                 value = self.hint(ListAction::Accept)
             ),
-            format!(
-                "{} · back; q / {} · close usage",
-                self.hint(ListAction::Cancel),
-                crate::key_hint::ctrl(crossterm::event::KeyCode::Char('c')).display_label()
+            crate::i18n::tr_format!(
+                "analytics-help-close-shortcut",
+                "{back} · back; q / {close} · close usage",
+                back = self.hint(ListAction::Cancel),
+                close = crate::key_hint::ctrl(crossterm::event::KeyCode::Char('c')).display_label()
             ),
         ]);
         if self.help_shortcut_available() {

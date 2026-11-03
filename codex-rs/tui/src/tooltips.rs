@@ -63,7 +63,7 @@ pub(crate) fn preferred_tooltip<R: Rng + ?Sized>(
 
     // Leave small chance for a random tooltip to be shown.
     if rng.random_ratio(/*numerator*/ 8, /*denominator*/ 10) {
-        return app_tooltip().map(str::to_string);
+        return app_tooltip().map(localize_tooltip);
     }
 
     None
@@ -119,7 +119,7 @@ fn pick_tooltip<R: Rng + ?Sized>(rng: &mut R, keymap: &TuiKeymap) -> Option<Stri
 /// Render shared tip styling and links, retaining visible URLs when the terminal needs them.
 pub(crate) fn render_tooltip_lines(tip: &str, width: usize, cwd: &Path) -> Vec<HyperlinkLine> {
     crate::markdown_render::render_streaming_markdown_lines_with_width_and_cwd(
-        &format!("**Tip:** {tip}"),
+        &format!("**{}** {tip}", crate::i18n::tr!("tooltip-label", "Tip:")),
         Some(width),
         Some(cwd),
         &crate::markdown_render::hide_web_link_destination,
@@ -144,7 +144,9 @@ pub(crate) fn tooltip_templates() -> impl Iterator<Item = &'static str> {
 
 /// Substitute `{key:context.action}` with the current primary shortcut in a Markdown code span.
 /// Skip the tip if a placeholder is invalid or its action has no binding.
-pub(crate) fn render_tooltip(mut template: &str, keymap: Option<&RuntimeKeymap>) -> Option<String> {
+pub(crate) fn render_tooltip(template: &str, keymap: Option<&RuntimeKeymap>) -> Option<String> {
+    let localized = localize_tooltip(template);
+    let mut template = localized.as_str();
     let mut rendered = String::new();
     while let Some((prefix, rest)) = template.split_once("{key:") {
         let (action, suffix) = rest.split_once('}')?;
@@ -162,74 +164,140 @@ pub(crate) fn render_tooltip(mut template: &str, keymap: Option<&RuntimeKeymap>)
 
 fn localize_tooltip(tip: &str) -> String {
     let key = match tip {
-        APP_TOOLTIP => "tooltip-codex-app",
-        FAST_TOOLTIP => "tooltip-fast-mode",
-        OTHER_TOOLTIP => "tooltip-build-faster-app",
-        OTHER_TOOLTIP_NON_MAC => "tooltip-build-faster-codex",
-        FREE_GO_TOOLTIP => "tooltip-free-plan",
-        "Use /compact when the conversation gets long to summarize history and free up context." => {
-            "tooltip-compact"
+        WINDOWS_APP_TOOLTIP => "tooltip-desktop-windows",
+        MACOS_APP_TOOLTIP => "tooltip-desktop-macos",
+        LINUX_APP_TOOLTIP => "tooltip-desktop-linux",
+        "Start a fresh idea with **/new**; the previous session stays in history." => {
+            "tooltip-current-new"
         }
-        "Start a fresh idea with /new; the previous session stays in history." => "tooltip-new",
-        "Use /feedback to send logs to the maintainers when something looks off." => {
-            "tooltip-feedback"
+        "Use **/feedback** to send logs to the maintainers when something looks off." => {
+            "tooltip-current-feedback"
         }
-        "Switch models or reasoning effort quickly with /model." => "tooltip-model",
-        "Use /permissions to control when Codex asks for confirmation." => "tooltip-permissions",
-        "Run /review to get a code review of your current changes." => "tooltip-review",
-        "Use /skills to list available skills or ask Codex to use one." => "tooltip-skills",
-        "Use /status to see the current model, approvals, and token usage." => "tooltip-status",
-        "Use /statusline to configure which items appear in the status line." => {
-            "tooltip-statusline"
+        "Switch models or reasoning effort quickly with **/model**." => "tooltip-current-model",
+        "Use **/permissions** to control when Codex asks for confirmation." => {
+            "tooltip-current-permissions"
         }
-        "Use /fork to branch the current chat into a new thread." => "tooltip-fork",
-        "Use /side to start a side conversation in a temporary fork without polluting the main thread." => {
-            "tooltip-side"
+        "Run **/review** to get a code review of your current changes." => "tooltip-current-review",
+        "Use **/skills** to list available skills or ask Codex to use one." => {
+            "tooltip-current-skills"
         }
-        "Use /init to create an AGENTS.md with project-specific guidance." => "tooltip-init",
-        "Use /mcp to list configured MCP tools." => "tooltip-mcp",
-        "Run `codex app` to open Codex Desktop (it installs on macOS if needed)." => {
-            "tooltip-open-desktop"
+        "Use **/status** to see the current model, approvals, and token usage." => {
+            "tooltip-current-status"
         }
-        "Use /personality to customize how Codex communicates." => "tooltip-personality",
-        "Use /rename to rename your threads for easier thread resuming." => {
-            "tooltip-rename-threads"
+        "Use **/statusline** to configure which items appear in the status line." => {
+            "tooltip-current-statusline"
+        }
+        "Use **/fork** to branch the current chat into a new thread." => "tooltip-current-fork",
+        "Use **/side** to start a side conversation in a temporary fork without polluting the main thread." => {
+            "tooltip-current-side"
+        }
+        "Use **/init** to create an `AGENTS.md` with project-specific guidance." => {
+            "tooltip-current-init"
+        }
+        "Use **/mcp** to list configured MCP tools." => "tooltip-current-mcp",
+        "Use **/rename** to rename your threads for easier thread resuming." => {
+            "tooltip-current-rename"
         }
         "Use the OpenAI docs MCP for API questions; enable it with `codex mcp add openaiDeveloperDocs --url https://developers.openai.com/mcp`." => {
-            "tooltip-openai-docs-mcp"
+            "tooltip-current-openai-docs"
         }
-        "Join the OpenAI community Discord: http://discord.gg/openai" => {
-            "tooltip-community-discord"
-        }
-        "Visit the Codex community forum: https://community.openai.com/c/codex/37" => {
-            "tooltip-community-forum"
+        "Visit the [Codex community forum](https://community.openai.com/c/codex/37)." => {
+            "tooltip-current-community"
         }
         "You can run any shell command from Codex using `!` (e.g. `!ls`)" => {
-            "tooltip-shell-command"
+            "tooltip-current-shell"
         }
-        "Type / to open the command popup; Tab autocompletes slash commands." => {
-            "tooltip-command-popup"
+        "Type `/` to open the command popup; `Tab` autocompletes slash commands." => {
+            "tooltip-current-commands"
         }
-        "When the composer is empty, press Esc to step back and edit your last message; Enter confirms." => {
-            "tooltip-edit-last-message"
+        "When the composer is empty, press `Esc` to step back and edit your last message; `Enter` confirms." => {
+            "tooltip-current-edit-message"
         }
-        "Press Tab to queue a message when a task is running; otherwise it sends immediately (except `!`)." => {
-            "tooltip-queue-message"
+        "Press {key:composer.queue} to queue a message when a task is running; otherwise it sends immediately (except `!`)." => {
+            "tooltip-current-queue"
         }
-        "[tui.keymap] in ~/.codex/config.toml lets you rebind supported shortcuts." => {
-            "tooltip-keymap-config"
+        "Use **/keymap** to configure keyboard shortcuts." => "tooltip-current-keymap",
+        "Paste an image with `Ctrl+V` to attach it to your next message." => {
+            "tooltip-current-paste-image"
         }
-        "See the Codex keymap documentation for supported actions and examples." => {
-            "tooltip-keymap-docs"
+        "You can resume a previous conversation by running `codex resume`" => {
+            "tooltip-current-resume"
         }
-        "Paste an image with Ctrl+V to attach it to your next message." => "tooltip-paste-image",
-        "You can resume a previous conversation by running `codex resume`" => "tooltip-resume",
-        "Use /copy or press Ctrl+O to copy the latest agent response as Markdown." => {
-            "tooltip-copy-response"
+        "Use **/copy** or press {key:global.copy} to copy the latest agent response as Markdown." => {
+            "tooltip-current-copy"
+        }
+        "Use **/vim** to toggle Vim editing in the composer." => "tooltip-current-vim",
+        "Moving from Claude Code? Use **/import** to bring over your setup, project, and recent chats." => {
+            "tooltip-current-import"
+        }
+        "Use **/hooks** to view and manage lifecycle hooks." => "tooltip-current-hooks",
+        "Use **/archive** to archive the current session." => "tooltip-current-archive",
+        "When worktree support is available, use **/worktree** to start or continue a conversation in a separate Git worktree." => {
+            "tooltip-current-worktree"
+        }
+        "Coming back to a conversation? Use **/recap** to summarize it." => "tooltip-current-recap",
+        "When voice is available, use **/voice** to start or stop a voice conversation, or **/voice settings** to choose a voice." => {
+            "tooltip-current-voice"
+        }
+        "When goals are enabled, use **/goal** to set or inspect the objective for a long-running task." => {
+            "tooltip-current-goal"
+        }
+        "Use **/agents** to open the agent command center." => "tooltip-current-agents",
+        "Use **/subagents** to switch between this session’s subagents." => {
+            "tooltip-current-subagents"
+        }
+        "Use **/export** to save your conversation as Markdown." => "tooltip-current-export",
+        "When signed in with ChatGPT, use **/usage** to check your account usage and access available usage limit resets." => {
+            "tooltip-current-usage"
+        }
+        "Use **/title** to choose what appears in your terminal’s title." => {
+            "tooltip-current-title"
+        }
+        "Use **/theme** to choose a syntax highlighting theme." => "tooltip-current-theme",
+        "When plugins are enabled, use **/plugins** to browse plugins." => {
+            "tooltip-current-plugins"
+        }
+        "Press {key:global.open_transcript} to open the full transcript." => {
+            "tooltip-current-transcript"
+        }
+        "Press {key:global.find_transcript} to search this conversation." => "tooltip-current-find",
+        "Press {key:global.open_external_editor} to edit your current draft in an external editor." => {
+            "tooltip-current-external-editor"
+        }
+        "Press {key:composer.history_search_previous} to search previously entered prompts." => {
+            "tooltip-current-history"
+        }
+        "For models with adjustable reasoning, press {key:chat.increase_reasoning_effort} to increase reasoning effort or {key:chat.decrease_reasoning_effort} to decrease it." => {
+            "tooltip-current-reasoning"
+        }
+        "Use {key:chat.open_presets}, then 0–9 to run a preset; Enter browses, s saves, and d deletes." => {
+            "tooltip-current-presets"
         }
         _ => return tip.to_string(),
     };
-    crate::i18n::global().text(key, None, || tip.to_string())
+    let mut args = fluent_bundle::FluentArgs::new();
+    args.set("key_composer_queue", "{key:composer.queue}");
+    args.set("key_global_copy", "{key:global.copy}");
+    args.set("key_global_open_transcript", "{key:global.open_transcript}");
+    args.set("key_global_find_transcript", "{key:global.find_transcript}");
+    args.set(
+        "key_global_open_external_editor",
+        "{key:global.open_external_editor}",
+    );
+    args.set(
+        "key_composer_history_search_previous",
+        "{key:composer.history_search_previous}",
+    );
+    args.set(
+        "key_chat_increase_reasoning_effort",
+        "{key:chat.increase_reasoning_effort}",
+    );
+    args.set(
+        "key_chat_decrease_reasoning_effort",
+        "{key:chat.decrease_reasoning_effort}",
+    );
+    args.set("key_chat_open_presets", "{key:chat.open_presets}");
+    crate::i18n::global().text(key, Some(&args), || tip.to_string())
 }
 
 pub(crate) mod announcement {
@@ -544,7 +612,7 @@ mod tests {
             }
             assert_eq!(
                 seen,
-                std::collections::BTreeSet::from([None, app_tooltip().map(str::to_string)])
+                std::collections::BTreeSet::from([None, app_tooltip().map(localize_tooltip)])
             );
         }
     }

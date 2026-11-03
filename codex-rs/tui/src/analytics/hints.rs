@@ -12,9 +12,15 @@ impl AnalyticsView {
         let pair = |a, b| format!("{}/{}", self.hint(a), self.hint(b));
         let mut actions = Vec::new();
         if self.show_help {
-            actions.push((self.hint(ListAction::Cancel), "back"));
+            actions.push((
+                self.hint(ListAction::Cancel),
+                crate::i18n::tr!("keymap-menu-hint-back", "back"),
+            ));
         } else if !self.zoomed {
-            actions.push((self.hint(ListAction::Accept), "focus"));
+            actions.push((
+                self.hint(ListAction::Accept),
+                crate::i18n::tr!("resume-footer-focus", "focus"),
+            ));
             actions.push(("tab".into(), "card"));
         } else {
             match self.section {
@@ -50,10 +56,16 @@ impl AnalyticsView {
             }
         }
         if scrollable {
-            actions.push((pair(ListAction::PageUp, ListAction::PageDown), "scroll"));
+            actions.push((
+                pair(ListAction::PageUp, ListAction::PageDown),
+                crate::i18n::tr!("warnings-hint-scroll", "scroll"),
+            ));
         }
         if !self.show_help {
-            actions.push((self.hint(ListAction::Cancel), "back"));
+            actions.push((
+                self.hint(ListAction::Cancel),
+                crate::i18n::tr!("keymap-menu-hint-back", "back"),
+            ));
         }
         let mut navigation = if self.show_help {
             vec![(
@@ -75,7 +87,7 @@ impl AnalyticsView {
                 (
                     "z".into(),
                     if !self.zoomed {
-                        "focus"
+                        crate::i18n::tr!("resume-footer-focus", "focus")
                     } else if width < 50 {
                         "all"
                     } else {

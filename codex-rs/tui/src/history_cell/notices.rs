@@ -30,53 +30,37 @@ impl HistoryCell for UpdateAvailableHistoryCell {
     fn display_lines(&self, width: u16) -> Vec<Line<'static>> {
         use ratatui_macros::line;
         use ratatui_macros::text;
-        let update_instruction = if let Some(update_action) = &self.update_action {
+        let update_instruction = if let Some(update_action) = self.update_action {
             line![
-                "Run ",
+                crate::i18n::tr!("update-run-prefix", "Run "),
                 update_action.command_str().fg(accent_color()),
-                " to update."
+                crate::i18n::tr!("update-run-suffix", " to update.")
             ]
         } else {
             line![
-                "See ",
+                crate::i18n::tr!("update-see-prefix", "See "),
                 "https://github.com/openai/codex"
                     .fg(accent_color())
                     .underlined(),
-                " for installation options."
+                crate::i18n::tr!("update-installation-suffix", " for installation options.")
             ]
         };
 
-        let (title, current_version, release_url) = self
-            .update_action
-            .as_ref()
-            .and_then(UpdateAction::ccu_prompt_details)
-            .map_or_else(
-                || {
-                    (
-                        "Update available!".to_string(),
-                        CODEX_CLI_VERSION.to_string(),
-                        "https://github.com/openai/codex/releases/latest".to_string(),
-                    )
-                },
-                |(current_version, release_url)| {
-                    (
-                        "CCU update available!".to_string(),
-                        current_version.to_string(),
-                        release_url.to_string(),
-                    )
-                },
-            );
         let content = text![
             line![
                 "✨\u{200A}".bold().fg(accent_color()),
-                title.bold().fg(accent_color()),
+                crate::i18n::tr!("update-available-notice", "Update available!")
+                    .bold()
+                    .fg(accent_color()),
                 " ",
-                format!("{current_version} -> {}", self.latest_version).bold(),
+                format!("{CODEX_CLI_VERSION} -> {}", self.latest_version).bold(),
             ],
             update_instruction,
             "",
-            "See full release notes:",
-            release_url.fg(accent_color()).underlined(),
+            crate::i18n::tr!("update-full-release-notes", "See full release notes:"),
+            "https://github.com/openai/codex/releases/latest"
+                .fg(accent_color())
+                .underlined(),
         ];
 
         let inner_width = content
@@ -88,38 +72,32 @@ impl HistoryCell for UpdateAvailableHistoryCell {
     }
 
     fn raw_lines(&self) -> Vec<Line<'static>> {
-        let update_instruction = if let Some(update_action) = &self.update_action {
-            format!("Run {} to update.", update_action.command_str())
+        let update_instruction = if let Some(update_action) = self.update_action {
+            crate::i18n::tr_format!(
+                "update-run-command",
+                "Run {command} to update.",
+                command = update_action.command_str()
+            )
         } else {
-            "See https://github.com/openai/codex for installation options.".to_string()
+            crate::i18n::tr!(
+                "update-installation-options",
+                "See https://github.com/openai/codex for installation options."
+            )
+            .to_string()
         };
-        let (title, current_version, release_url) = self
-            .update_action
-            .as_ref()
-            .and_then(UpdateAction::ccu_prompt_details)
-            .map_or_else(
-                || {
-                    (
-                        "Update available!".to_string(),
-                        CODEX_CLI_VERSION.to_string(),
-                        "https://github.com/openai/codex/releases/latest".to_string(),
-                    )
-                },
-                |(current_version, release_url)| {
-                    (
-                        "CCU update available!".to_string(),
-                        current_version.to_string(),
-                        release_url.to_string(),
-                    )
-                },
-            );
         vec![
-            Line::from(title),
-            Line::from(format!("{current_version} -> {}", self.latest_version)),
+            Line::from(crate::i18n::tr!(
+                "update-available-notice",
+                "Update available!"
+            )),
+            Line::from(format!("{CODEX_CLI_VERSION} -> {}", self.latest_version)),
             Line::from(update_instruction),
             Line::from(""),
-            Line::from("See full release notes:"),
-            Line::from(release_url),
+            Line::from(crate::i18n::tr!(
+                "update-full-release-notes",
+                "See full release notes:"
+            )),
+            Line::from("https://github.com/openai/codex/releases/latest"),
         ]
     }
 
@@ -161,10 +139,18 @@ pub(crate) fn new_server_version_warning(
     let mut lines = vec![Line::from(notice.message.set_style(style))];
     if notice.offer_update {
         lines.push(Line::from(
-            "Use /daemon to manage the local background server.".fg(accent_color()),
+            crate::i18n::tr!(
+                "status-daemon-manage-hint",
+                "Use /daemon to manage the local background server."
+            )
+            .fg(accent_color()),
         ));
         lines.push(Line::from(
-            "Updating may interrupt active or queued work.".set_style(style),
+            crate::i18n::tr!(
+                "status-daemon-update-warning",
+                "Updating may interrupt active or queued work."
+            )
+            .set_style(style),
         ));
     }
     WarningHistoryCell {

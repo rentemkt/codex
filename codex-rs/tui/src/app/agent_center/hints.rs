@@ -100,6 +100,11 @@ impl AgentsOverviewView {
                 crate::i18n::tr!("ui-resume", "Resume"),
             ),
             (
+                "fork",
+                &self.agents_keymap.fork,
+                crate::i18n::tr!("agents-shortcut-fork", "Fork"),
+            ),
+            (
                 "rename",
                 &self.agents_keymap.rename,
                 crate::i18n::tr!("ui-rename", "Rename"),
@@ -124,14 +129,11 @@ impl AgentsOverviewView {
                 &self.agents_keymap.delete,
                 crate::i18n::tr!("ui-delete", "Delete"),
             ),
-            ("resume", &self.agents_keymap.resume, "Resume"),
-            ("fork", &self.agents_keymap.fork, "Fork"),
-            ("rename", &self.agents_keymap.rename, "Rename"),
-            ("stop", &self.agents_keymap.stop, "Stop"),
-            ("archive", &self.agents_keymap.archive, "Archive"),
-            ("hide", &self.agents_keymap.hide, "Hide"),
-            ("delete", &self.agents_keymap.delete, "Delete"),
-            ("toggle_pin", &self.agents_keymap.toggle_pin, "Pin/unpin"),
+            (
+                "toggle_pin",
+                &self.agents_keymap.toggle_pin,
+                crate::i18n::tr!("agents-shortcut-pin", "Pin/unpin"),
+            ),
         ] {
             if (action != "new_worktree" || self.worktrees_enabled)
                 && (action != "toggle_pin" || self.can_toggle_selected_pin())
@@ -200,7 +202,10 @@ impl AgentsOverviewView {
             self.center_list_hint(ListAction::Cancel)
         };
         if let Some(hint) = cancel {
-            hints.push((hint.display_label(), "back".into()));
+            hints.push((
+                hint.display_label(),
+                crate::i18n::tr!("keymap-menu-hint-back", "back").into(),
+            ));
         }
         if state.help {
             return hints;
@@ -232,7 +237,10 @@ impl AgentsOverviewView {
                 .agents_keymap
                 .primary_hint("new_task", &self.agents_keymap.new_task)
         {
-            hints.push((hint.display_label(), "new".into()));
+            hints.push((
+                hint.display_label(),
+                crate::i18n::tr!("resume-footer-new", "new").into(),
+            ));
         }
         hints
     }

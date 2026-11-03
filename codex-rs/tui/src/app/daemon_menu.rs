@@ -165,7 +165,7 @@ impl App {
             ])),
             items: vec![
                 SelectionItem {
-                    name: "Cancel".to_string(),
+                    name: crate::i18n::tr!("permissions-cancel", "Cancel").to_string(),
                     dismiss_on_select: true,
                     ..Default::default()
                 },

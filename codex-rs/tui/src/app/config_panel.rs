@@ -20,9 +20,10 @@ impl App {
                 .await;
         if let Err(error) = result {
             self.chat_widget
-                .refresh_config_panel(/*notice*/ Some(format!(
-                    "Could not save: {}",
-                    format_config_error(&error)
+                .refresh_config_panel(/*notice*/ Some(crate::i18n::tr_format!(
+                    "config-save-failed",
+                    "Could not save: {error}",
+                    error = format_config_error(&error)
                 )));
             return;
         }
@@ -57,10 +58,14 @@ impl App {
         {
             Ok(settings) => settings,
             Err(error) => {
-                self.chat_widget
-                    .refresh_config_panel(
-                        /*notice*/ Some(format!("Saved, but could not reload: {error}")),
-                    );
+                self.chat_widget.refresh_config_panel(
+                    /*notice*/
+                    Some(crate::i18n::tr_format!(
+                        "config-reload-failed",
+                        "Saved, but could not reload: {error}",
+                        error = error
+                    )),
+                );
                 return;
             }
         };
@@ -110,7 +115,10 @@ impl App {
             ConfigPreference::ResumeDirectory(mode) => resolved.tui.resume_cwd == mode,
         };
         let notice = if !effective {
-            Some("Saved · overridden by config or system setting")
+            Some(crate::i18n::tr!(
+                "config-saved-overridden",
+                "Saved · overridden by config or system setting"
+            ))
         } else if matches!(
             preference,
             ConfigPreference::Toggle {
@@ -118,7 +126,10 @@ impl App {
                 ..
             }
         ) {
-            Some("Saved · applies to new composers")
+            Some(crate::i18n::tr!(
+                "config-saved-new-composers",
+                "Saved · applies to new composers"
+            ))
         } else {
             None
         };
@@ -137,7 +148,11 @@ impl App {
     pub(super) fn schedule_config_notification_test(&mut self) {
         if self.config_notification_test_pending.is_some() {
             self.chat_widget.refresh_config_panel(/*notice*/ Some(
-                "Test already scheduled · switch apps".into(),
+                crate::i18n::tr!(
+                    "config-test-already-scheduled",
+                    "Test already scheduled · switch apps"
+                )
+                .into(),
             ));
             return;
         }
@@ -146,9 +161,13 @@ impl App {
             .wrapping_add(/*rhs*/ 1);
         let generation = self.config_notification_test_generation;
         self.config_notification_test_pending = Some(generation);
-        self.chat_widget.refresh_config_panel(
-            /*notice*/ Some("Test scheduled in 5s · switch apps".into()),
-        );
+        self.chat_widget.refresh_config_panel(/*notice*/ Some(
+            crate::i18n::tr!(
+                "config-test-scheduled",
+                "Test scheduled in 5s · switch apps"
+            )
+            .into(),
+        ));
         let tx = self.app_event_tx.clone();
         tokio::spawn(async move {
             tokio::time::sleep(std::time::Duration::from_secs(/*secs*/ 5)).await;
@@ -161,15 +180,27 @@ impl App {
             return;
         }
         self.config_notification_test_pending = None;
-        let notice = if !tui.notify_test("Codex notification test") {
-            "Could not send test · check terminal connection"
+        let notice = if !tui.notify_test(crate::i18n::tr!(
+            "config-test-notification-body",
+            "Codex notification test"
+        )) {
+            crate::i18n::tr!(
+                "config-test-failed",
+                "Could not send test · check terminal connection"
+            )
         } else if codex_terminal_detection::terminal_info().name
             == codex_terminal_detection::TerminalName::Ghostty
             && tui.is_terminal_focused()
         {
-            "Test sent · Ghostty hides banners while focused"
+            crate::i18n::tr!(
+                "config-test-ghostty",
+                "Test sent · Ghostty hides banners while focused"
+            )
         } else {
-            "Test sent · check terminal/system settings"
+            crate::i18n::tr!(
+                "config-test-sent",
+                "Test sent · check terminal/system settings"
+            )
         };
         if !self
             .chat_widget

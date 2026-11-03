@@ -145,7 +145,10 @@ impl SessionTarget {
     pub(crate) fn ensure_backend(&self, backend_id: crate::backend_id::BackendId) -> Result<()> {
         color_eyre::eyre::ensure!(
             self.backend_id == backend_id,
-            "This session belongs to a different backend. Open the session picker again."
+            crate::i18n::tr!(
+                "resume-backend-mismatch",
+                "This session belongs to a different backend. Open the session picker again."
+            )
         );
         Ok(())
     }
@@ -1660,8 +1663,13 @@ impl PickerState {
             }
             BackgroundEvent::SourceError { request_token } => {
                 if self.pagination.is_pending(request_token) {
-                    self.inline_error =
-                        Some("Could not load one backend. Reopen the picker to retry.".into());
+                    self.inline_error = Some(
+                        crate::i18n::tr!(
+                            "resume-backend-load-failed",
+                            "Could not load one backend. Reopen the picker to retry."
+                        )
+                        .into(),
+                    );
                     self.request_frame();
                 }
             }
@@ -1709,7 +1717,13 @@ impl PickerState {
                         self.pending_page_down_target = None;
                         self.frozen_footer_percent = None;
                         self.search_state = SearchState::Idle;
-                        self.inline_error = Some("Could not load more sessions".to_string());
+                        self.inline_error = Some(
+                            crate::i18n::tr!(
+                                "resume-load-more-failed",
+                                "Could not load more sessions"
+                            )
+                            .to_string(),
+                        );
                         self.request_frame();
                         return Ok(None);
                     }
@@ -2395,7 +2409,7 @@ fn toolbar_for_width(state: &PickerState, width: u16) -> Line<'static> {
         ToolbarControl::Filter => filter_control_spans(state, /*compact*/ true),
         ToolbarControl::Sort => sort_control_spans(state, /*compact*/ true),
         ToolbarControl::Status => vec![
-            "Status:".set_style(secondary_text_style()),
+            crate::i18n::tr!("resume-status-label", "Status:").set_style(secondary_text_style()),
             toolbar_value(
                 match state.status {
                     SessionStatus::Active => resume_text("resume-status-active", "Active"),
@@ -2431,14 +2445,17 @@ fn toolbar_line(state: &PickerState, compact: bool) -> Line<'static> {
                 status_focused,
             ));
         } else {
-            spans.push("Status: ".set_style(secondary_text_style()));
+            spans.push(
+                crate::i18n::tr!("resume-status-label-spaced", "Status: ")
+                    .set_style(secondary_text_style()),
+            );
             spans.push(toolbar_value(
-                "Active".to_string(),
+                resume_text("resume-status-active", "Active"),
                 state.status == SessionStatus::Active,
                 status_focused,
             ));
             spans.push(toolbar_value(
-                "Archived".to_string(),
+                resume_text("resume-status-archived", "Archived"),
                 state.status == SessionStatus::Archived,
                 status_focused,
             ));
@@ -2529,9 +2546,9 @@ fn toolbar_value(label: String, active: bool, focused: bool) -> Span<'static> {
 
 fn filter_mode_label(filter_mode: SessionFilterMode) -> String {
     match filter_mode {
-        SessionFilterMode::Cwd => "Cwd",
-        SessionFilterMode::Repo => "Repo",
-        SessionFilterMode::All => "All",
+        SessionFilterMode::Cwd => resume_text("resume-filter-cwd", "Cwd"),
+        SessionFilterMode::Repo => resume_text("resume-filter-repo", "Repo"),
+        SessionFilterMode::All => resume_text("resume-filter-all", "All"),
     }
 }
 

@@ -3401,7 +3401,7 @@ impl App {
                         let error = format_config_error(&err);
                         tracing::error!(error = %error, "failed to persist status line settings; keeping previous selection");
                         self.app_event_tx.send(AppEvent::FollowTranscript);
-                        let message = format!("Failed to save status line settings: {error}");
+                        let message = crate::i18n::tr_format!("status-line-save-failed", "Failed to save status line settings: {error}", error = error);
                         self.chat_widget.report_config_save_error(message);
                     }
                 }
@@ -3443,7 +3443,7 @@ impl App {
                         tracing::error!(error = %err, "failed to persist terminal title items; keeping previous selection");
                         self.app_event_tx.send(AppEvent::FollowTranscript);
                         self.chat_widget.revert_terminal_title_setup_preview();
-                        let message = format!("Failed to save terminal title items: {err}");
+                        let message = crate::i18n::tr_format!("title-save-failed", "Failed to save terminal title items: {error}", error = err);
                         self.chat_widget.report_config_save_error(message);
                     }
                 }

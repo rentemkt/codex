@@ -160,7 +160,8 @@ impl App {
                 title: Some("Unable to resume session".to_string()),
                 subtitle: Some(message.clone()),
                 items: vec![SelectionItem {
-                    name: "Return to command center".to_string(),
+                    name: crate::i18n::tr!("agents-return-center", "Return to command center")
+                        .to_string(),
                     dismiss_on_select: true,
                     ..Default::default()
                 }],
