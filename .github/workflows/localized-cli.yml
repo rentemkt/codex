@@ -148,8 +148,16 @@ jobs:
           binary=target/aarch64-apple-darwin/release/codex
           [[ "$(lipo -archs "$binary")" == "arm64" ]]
           xcrun strip -x "$binary"
-          codesign --force --sign - "$binary"
+          codesign --force --sign - --entitlements ../.github/scripts/macos-signing/codex.entitlements.plist "$binary"
           codesign --verify --strict "$binary"
+          actual="$RUNNER_TEMP/localized-cli-entitlements.plist"
+          codesign -d --entitlements :- "$binary" > "$actual"
+          python3 - ../.github/scripts/macos-signing/codex.entitlements.plist "$actual" <<'PYCODE'
+          import plistlib, sys
+          expected = plistlib.load(open(sys.argv[1], "rb"))
+          actual = plistlib.load(open(sys.argv[2], "rb"))
+          assert actual == expected, "Localized CLI entitlements must match the official policy"
+          PYCODE
           file "$binary"
       - name: Preserve official helpers, audio runtime and package resources
         working-directory: .
