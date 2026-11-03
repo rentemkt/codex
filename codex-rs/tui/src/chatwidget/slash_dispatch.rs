@@ -585,6 +585,9 @@ impl ChatWidget {
             SlashCommand::Config => {
                 self.open_config_panel();
             }
+            SlashCommand::Language => {
+                self.open_language_picker();
+            }
             SlashCommand::Theme => {
                 self.open_theme_picker();
             }
@@ -1132,6 +1135,12 @@ impl ChatWidget {
             SlashCommand::Pets if !trimmed.is_empty() => {
                 self.select_pet_by_id(args);
             }
+            SlashCommand::Language => {
+                match crate::i18n::save_language_preference(&self.config.codex_home, trimmed) {
+                    Ok(message) => self.add_info_message(message, /*hint*/ None),
+                    Err(message) => self.add_error_message(message),
+                }
+            }
             _ => self.dispatch_command_from_source(cmd, source),
         }
         if source == SlashCommandDispatchSource::Live && cmd != SlashCommand::Goal {
@@ -1362,6 +1371,7 @@ impl ChatWidget {
             | SlashCommand::Config
             | SlashCommand::Theme
             | SlashCommand::Tui
+            | SlashCommand::Language
             | SlashCommand::Pets => QueueDrain::Stop,
         }
     }

@@ -226,12 +226,13 @@ impl CommandPopup {
             .map(|(index, (item, indices))| {
                 let name = format!("/{}", item.command());
                 let description = if matches!(item, CommandItem::Builtin(SlashCommand::Daybreak)) {
-                    self.daybreak_command_description
-                        .unwrap_or(item.description())
+                    match self.daybreak_command_description {
+                        Some(english) => localized_daybreak_description(english),
+                        None => item.description(),
+                    }
                 } else {
                     item.description()
-                }
-                .to_string();
+                };
                 let unavailable = self.is_unavailable(&item);
                 GenericDisplayRow {
                     name,
@@ -305,12 +306,25 @@ impl CommandItem {
         }
     }
 
-    fn description(&self) -> &str {
+    fn description(&self) -> String {
         match self {
-            Self::Builtin(cmd) => cmd.description(),
-            Self::ServiceTier(command) => &command.description,
+            Self::Builtin(cmd) => cmd.localized_description(),
+            Self::ServiceTier(command) => command.description.clone(),
         }
     }
+}
+
+// The connected host selects the Daybreak action. Localize that exact action
+// without changing availability or substituting the generic toggle description.
+fn localized_daybreak_description(english: &str) -> String {
+    let key = match english {
+        "Disable broader access for cybersecurity work" => "slash-daybreak-disable-description",
+        "Enable broader access for cybersecurity work" => "slash-daybreak-enable-description",
+        "Learn about broader access for cybersecurity work" => "slash-daybreak-learn-description",
+        "Manage broader access for cybersecurity work" => "slash-daybreak-manage-description",
+        _ => return english.to_string(),
+    };
+    crate::i18n::global().text(key, None, || english.to_string())
 }
 
 impl WidgetRef for CommandPopup {
@@ -322,7 +336,7 @@ impl WidgetRef for CommandPopup {
             &rows,
             &self.state,
             MAX_POPUP_ROWS,
-            "no matches",
+            crate::i18n::tr!("command-popup-no-matches", "no matches"),
             COMMAND_COLUMN_WIDTH,
         );
     }

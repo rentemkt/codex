@@ -393,6 +393,7 @@ eventsource-stream = "0.2.3"
 file-id = "0.2.3"
 flatbuffers = "25"
 flate2 = "1.1.8"
+fluent-bundle = "0.15.3"
 futures = { version = "0.3", default-features = false }
 gethostname = "1.1.0"
 gix = { version = "0.89.0", default-features = false, features = ["sha1"] }
@@ -552,6 +553,7 @@ tree-sitter-powershell = "=0.26.4"
 ts-rs = "11"
 tungstenite = { version = "0.27.0", features = ["deflate", "proxy"] }
 uds_windows = "1.1.0"
+unic-langid = "0.9.6"
 unicode-segmentation = "1.12.0"
 unicode-width = "0.2"
 url = "2"

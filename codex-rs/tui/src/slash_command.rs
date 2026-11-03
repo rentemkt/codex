@@ -64,6 +64,7 @@ pub enum SlashCommand {
     Title,
     Statusline,
     Theme,
+    Language,
     #[strum(to_string = "pets", serialize = "pet")]
     Pets,
     Mcp,
@@ -127,6 +128,7 @@ impl SlashCommand {
             SlashCommand::Title => "configure which items appear in the terminal title",
             SlashCommand::Statusline => "configure which items appear in the status line",
             SlashCommand::Theme => "choose a syntax highlighting theme",
+            SlashCommand::Language => "view or select the display language",
             SlashCommand::Pets => "choose or hide the terminal pet",
             SlashCommand::Ps => "list background terminals",
             SlashCommand::Stop => "stop all background terminals",
@@ -162,6 +164,238 @@ impl SlashCommand {
         }
     }
 
+    pub(crate) fn description_metadata(self) -> (&'static str, &'static str) {
+        match self {
+            SlashCommand::Config => (
+                "tui.slash-command.description.config",
+                "slash-config-description",
+            ),
+            SlashCommand::Presets => (
+                "tui.slash-command.description.presets",
+                "slash-presets-description",
+            ),
+            SlashCommand::Daybreak => (
+                "tui.slash-command.description.daybreak",
+                "slash-daybreak-description",
+            ),
+            SlashCommand::Tui => ("tui.slash-command.description.tui", "slash-tui-description"),
+            SlashCommand::Daemon => (
+                "tui.slash-command.description.daemon",
+                "slash-daemon-description",
+            ),
+            SlashCommand::Warnings => (
+                "tui.slash-command.description.warnings",
+                "slash-warnings-description",
+            ),
+            SlashCommand::Feedback => (
+                "tui.slash-command.description.feedback",
+                "slash-feedback-description",
+            ),
+            SlashCommand::New => ("tui.slash-command.description.new", "slash-new-description"),
+            SlashCommand::Init => (
+                "tui.slash-command.description.init",
+                "slash-init-description",
+            ),
+            SlashCommand::Compact => (
+                "tui.slash-command.description.compact",
+                "slash-compact-description",
+            ),
+            SlashCommand::Recap => (
+                "tui.slash-command.description.recap",
+                "slash-recap-description",
+            ),
+            SlashCommand::Review => (
+                "tui.slash-command.description.review",
+                "slash-review-description",
+            ),
+            SlashCommand::Rename => (
+                "tui.slash-command.description.rename",
+                "slash-rename-description",
+            ),
+            SlashCommand::Resume => (
+                "tui.slash-command.description.resume",
+                "slash-resume-description",
+            ),
+            SlashCommand::Cd => ("tui.slash-command.description.cd", "slash-cd-description"),
+            SlashCommand::Worktree => (
+                "tui.slash-command.description.worktree",
+                "slash-worktree-description",
+            ),
+            SlashCommand::Pwd => ("tui.slash-command.description.pwd", "slash-pwd-description"),
+            SlashCommand::Archive => (
+                "tui.slash-command.description.archive",
+                "slash-archive-description",
+            ),
+            SlashCommand::Delete => (
+                "tui.slash-command.description.delete",
+                "slash-delete-description",
+            ),
+            SlashCommand::Clear => (
+                "tui.slash-command.description.clear",
+                "slash-clear-description",
+            ),
+            SlashCommand::Fork => (
+                "tui.slash-command.description.fork",
+                "slash-fork-description",
+            ),
+            SlashCommand::App => ("tui.slash-command.description.app", "slash-app-description"),
+            SlashCommand::Quit | SlashCommand::Exit => (
+                "tui.slash-command.description.exit",
+                "slash-exit-description",
+            ),
+            SlashCommand::Copy => (
+                "tui.slash-command.description.copy",
+                "slash-copy-description",
+            ),
+            SlashCommand::Export => (
+                "tui.slash-command.description.export",
+                "slash-export-description",
+            ),
+            SlashCommand::Raw => ("tui.slash-command.description.raw", "slash-raw-description"),
+            SlashCommand::Diff => (
+                "tui.slash-command.description.diff",
+                "slash-diff-description",
+            ),
+            SlashCommand::Mention => (
+                "tui.slash-command.description.mention",
+                "slash-mention-description",
+            ),
+            SlashCommand::Skills => (
+                "tui.slash-command.description.skills",
+                "slash-skills-description",
+            ),
+            SlashCommand::Import => (
+                "tui.slash-command.description.import",
+                "slash-import-description",
+            ),
+            SlashCommand::Hooks => (
+                "tui.slash-command.description.hooks",
+                "slash-hooks-description",
+            ),
+            SlashCommand::Status => (
+                "tui.slash-command.description.status",
+                "slash-status-description",
+            ),
+            SlashCommand::Usage => (
+                "tui.slash-command.description.usage",
+                "slash-usage-description",
+            ),
+            SlashCommand::DebugConfig => (
+                "tui.slash-command.description.debug-config",
+                "slash-debug-config-description",
+            ),
+            SlashCommand::Title => (
+                "tui.slash-command.description.title",
+                "slash-title-description",
+            ),
+            SlashCommand::Statusline => (
+                "tui.slash-command.description.statusline",
+                "slash-statusline-description",
+            ),
+            SlashCommand::Theme => (
+                "tui.slash-command.description.theme",
+                "slash-theme-description",
+            ),
+            SlashCommand::Language => (
+                "tui.slash-command.description.language",
+                "slash-language-description",
+            ),
+            SlashCommand::Pets => (
+                "tui.slash-command.description.pets",
+                "slash-pets-description",
+            ),
+            SlashCommand::Ps => ("tui.slash-command.description.ps", "slash-ps-description"),
+            SlashCommand::Stop => (
+                "tui.slash-command.description.stop",
+                "slash-stop-description",
+            ),
+            SlashCommand::MemoryDrop | SlashCommand::MemoryUpdate => (
+                "tui.slash-command.description.internal-debug",
+                "slash-internal-debug-description",
+            ),
+            SlashCommand::Model => (
+                "tui.slash-command.description.model",
+                "slash-model-description",
+            ),
+            SlashCommand::Ide => ("tui.slash-command.description.ide", "slash-ide-description"),
+            SlashCommand::Plan => (
+                "tui.slash-command.description.plan",
+                "slash-plan-description",
+            ),
+            SlashCommand::Voice => (
+                "tui.slash-command.description.voice",
+                "slash-voice-description",
+            ),
+            SlashCommand::Goal => (
+                "tui.slash-command.description.goal",
+                "slash-goal-description",
+            ),
+            SlashCommand::Agents => (
+                "tui.slash-command.description.agent",
+                "slash-agent-description",
+            ),
+            SlashCommand::MultiAgents => (
+                "tui.slash-command.description.subagents",
+                "slash-subagents-description",
+            ),
+            SlashCommand::Side | SlashCommand::Btw => (
+                "tui.slash-command.description.side",
+                "slash-side-description",
+            ),
+            SlashCommand::Permissions => (
+                "tui.slash-command.description.permissions",
+                "slash-permissions-description",
+            ),
+            SlashCommand::Keymap => (
+                "tui.slash-command.description.keymap",
+                "slash-keymap-description",
+            ),
+            SlashCommand::Vim => ("tui.slash-command.description.vim", "slash-vim-description"),
+            SlashCommand::ElevateSandbox => (
+                "tui.slash-command.description.elevate-sandbox",
+                "slash-elevate-sandbox-description",
+            ),
+            SlashCommand::Experimental => (
+                "tui.slash-command.description.experimental",
+                "slash-experimental-description",
+            ),
+            SlashCommand::AutoReview => (
+                "tui.slash-command.description.approve",
+                "slash-approve-description",
+            ),
+            SlashCommand::Memories => (
+                "tui.slash-command.description.memories",
+                "slash-memories-description",
+            ),
+            SlashCommand::Mcp => ("tui.slash-command.description.mcp", "slash-mcp-description"),
+            SlashCommand::Apps => (
+                "tui.slash-command.description.apps",
+                "slash-apps-description",
+            ),
+            SlashCommand::Plugins => (
+                "tui.slash-command.description.plugins",
+                "slash-plugins-description",
+            ),
+            SlashCommand::Logout => (
+                "tui.slash-command.description.logout",
+                "slash-logout-description",
+            ),
+            SlashCommand::Rollout => (
+                "tui.slash-command.description.rollout",
+                "slash-rollout-description",
+            ),
+            SlashCommand::TestApproval => (
+                "tui.slash-command.description.test-approval",
+                "slash-test-approval-description",
+            ),
+        }
+    }
+
+    pub(crate) fn localized_description(self) -> String {
+        let (_id, key) = self.description_metadata();
+        crate::i18n::global().text(key, None, || self.description().to_string())
+    }
+
     /// Command string without the leading '/'. Provided for compatibility with
     /// existing code that expects a method named `command()`.
     pub fn command(self) -> &'static str {
@@ -192,6 +426,7 @@ impl SlashCommand {
                 | SlashCommand::Cd
                 | SlashCommand::Pwd
                 | SlashCommand::Usage
+                | SlashCommand::Language
                 | SlashCommand::Pets
                 | SlashCommand::Side
                 | SlashCommand::Btw
@@ -215,6 +450,7 @@ impl SlashCommand {
                 | SlashCommand::Pwd
                 | SlashCommand::Usage
                 | SlashCommand::Ide
+                | SlashCommand::Language
         )
     }
 
@@ -242,6 +478,7 @@ impl SlashCommand {
                 | SlashCommand::Rollout
                 | SlashCommand::Copy
                 | SlashCommand::Raw
+                | SlashCommand::Language
         )
     }
 
@@ -299,6 +536,7 @@ impl SlashCommand {
             | SlashCommand::Plugins
             | SlashCommand::Title
             | SlashCommand::Statusline
+            | SlashCommand::Language
             | SlashCommand::AutoReview
             | SlashCommand::Feedback
             | SlashCommand::Ide
@@ -361,6 +599,10 @@ mod tests {
         assert!(SlashCommand::Ide.available_during_task());
         assert!(SlashCommand::Title.available_during_task());
         assert!(SlashCommand::Statusline.available_during_task());
+        assert!(SlashCommand::Language.available_during_task());
+        assert!(SlashCommand::Language.available_in_side_conversation());
+        assert!(SlashCommand::Language.available_when_thread_unavailable());
+        assert!(SlashCommand::Language.supports_inline_args());
         assert!(SlashCommand::Raw.available_during_task());
         assert!(SlashCommand::Raw.available_in_side_conversation());
         assert!(SlashCommand::Raw.supports_inline_args());

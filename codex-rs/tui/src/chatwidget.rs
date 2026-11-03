@@ -306,6 +306,7 @@ mod clipboard;
 mod copy_picker;
 mod hook_lifecycle;
 mod hooks;
+mod language;
 mod interaction;
 pub(crate) use interaction::KeyEventAction;
 mod skills;

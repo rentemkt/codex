@@ -1038,6 +1038,12 @@ fn stage_str(stage: Stage) -> &'static str {
 
 fn main() -> anyhow::Result<()> {
     codex_build_info::initialize!();
+    let args = std::env::args_os().collect::<Vec<_>>();
+    if args.len() == 2 && args[1].as_os_str() == std::ffi::OsStr::new("--i18n-self-check") {
+        println!("{}", codex_tui::i18n_self_check_json());
+        return Ok(());
+    }
+
     let remote_control_disabled = codex_app_server::take_remote_control_disabled_env();
     arg0_dispatch_or_else(move |arg0_paths: Arg0DispatchPaths| async move {
         // Keep the CLI dispatcher off the runtime's stack while the TUI rebuilds a thread.
