@@ -88,9 +88,10 @@ pub(crate) async fn check_directory_trust(
             && project.trust_level == Some(TrustLevel::Untrusted)
             && !config.active_project.is_untrusted()
         {
-            color_eyre::eyre::bail!(
+            color_eyre::eyre::bail!(crate::i18n::tr!(
+                "onboarding-trust-changed",
                 "Folder trust changed. Reopen the destination with its restricted settings."
-            );
+            ));
         }
         let remote_trust_key =
             connected.then(|| project.trust_target.to_string_lossy().into_owned());

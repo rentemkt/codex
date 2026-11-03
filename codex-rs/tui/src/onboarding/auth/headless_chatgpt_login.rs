@@ -89,9 +89,12 @@ pub(super) fn render_device_code_login(
     state: &ContinueWithDeviceCodeState,
 ) {
     let banner = if state.is_showing_copyable_auth() {
-        "Finish signing in via your browser"
+        crate::i18n::tr!(
+            "onboarding-finish-browser",
+            "Finish signing in via your browser"
+        )
     } else {
-        "Preparing device code login"
+        crate::i18n::tr!("onboarding-device-preparing", "Preparing device code login")
     };
 
     let mut spans = vec!["  ".into()];
@@ -109,7 +112,13 @@ pub(super) fn render_device_code_login(
     let verification_url = if let (Some(verification_url), Some(user_code)) =
         (&state.verification_url, &state.user_code)
     {
-        lines.push("  1. Open this link in your browser and sign in".into());
+        lines.push(
+            crate::i18n::tr!(
+                "onboarding-device-open-link",
+                "  1. Open this link in your browser and sign in"
+            )
+            .into(),
+        );
         lines.push("".into());
         lines.push(Line::from(vec![
             "  ".into(),
@@ -117,7 +126,11 @@ pub(super) fn render_device_code_login(
         ]));
         lines.push("".into());
         lines.push(
-            "  2. Enter this one-time code after you are signed in (expires in 15 minutes)".into(),
+            crate::i18n::tr!(
+                "onboarding-device-enter-code",
+                "  2. Enter this one-time code after you are signed in (expires in 15 minutes)"
+            )
+            .into(),
         );
         lines.push("".into());
         lines.push(Line::from(vec![
@@ -126,22 +139,29 @@ pub(super) fn render_device_code_login(
         ]));
         lines.push("".into());
         lines.push(
-            "  Continue only if you started this login in Codex. If a website or another person gave you this code, cancel."
+            crate::i18n::tr!("onboarding-device-login-warning", "  Continue only if you started this login in Codex. If a website or another person gave you this code, cancel.")
                 .dim()
                 .into(),
         );
         lines.push("".into());
         Some(verification_url.clone())
     } else {
-        lines.push("  Requesting a one-time code...".dim().into());
+        lines.push(
+            crate::i18n::tr!(
+                "onboarding-device-requesting",
+                "  Requesting a one-time code..."
+            )
+            .dim()
+            .into(),
+        );
         lines.push("".into());
         None
     };
 
     lines.push(Line::from(vec![
-        "  Press ".dim(),
+        crate::i18n::tr!("onboarding-press-prefix", "  Press ").dim(),
         widget.cancel_binding().into(),
-        " to cancel".dim(),
+        crate::i18n::tr!("onboarding-cancel-suffix", " to cancel").dim(),
     ]));
     Paragraph::new(lines)
         .wrap(Wrap { trim: false })

@@ -660,12 +660,12 @@ async fn run_onboarding_screen_inner(
                                 let message = match result {
                                     Ok(CopyStatus::Pending(id)) => {
                                         pending_copy = Some((id, login_id));
-                                        "Copying link…".to_string()
+                                        crate::i18n::tr!("onboarding-link-copying", "Copying link…").to_string()
                                     }
-                                    Ok(CopyStatus::Busy) => "Clipboard busy; try again".to_string(),
-                                    Ok(CopyStatus::Confirmed) => "Copied link to clipboard".to_string(),
-                                    Ok(CopyStatus::Unconfirmed) => "Copy requested; check your clipboard".to_string(),
-                                    Err(error) => format!("Could not copy link: {error}"),
+                                    Ok(CopyStatus::Busy) => crate::i18n::tr!("onboarding-link-clipboard-busy", "Clipboard busy; try again").to_string(),
+                                    Ok(CopyStatus::Confirmed) => crate::i18n::tr!("onboarding-link-copied", "Copied link to clipboard").to_string(),
+                                    Ok(CopyStatus::Unconfirmed) => crate::i18n::tr!("onboarding-link-copy-unconfirmed", "Copy requested; check your clipboard").to_string(),
+                                    Err(error) => crate::i18n::tr_format!("onboarding-link-copy-failed", "Could not copy link: {error}", error = error),
                                 };
                                 if let Some(Step::Auth(widget)) = onboarding_screen.current_steps_mut().into_iter().last() {
                                     *widget.error.write().unwrap_or_else(std::sync::PoisonError::into_inner) = Some(message);
@@ -700,10 +700,10 @@ async fn run_onboarding_screen_inner(
                                     })
                                 {
                                     let message = match result {
-                                        Ok(CopyStatus::Confirmed) => "Copied link to clipboard".to_string(),
-                                        Ok(CopyStatus::Unconfirmed) => "Copy requested; check your clipboard".to_string(),
-                                        Ok(CopyStatus::Busy | CopyStatus::Pending(_)) => "Clipboard busy; try again".to_string(),
-                                        Err(error) => format!("Could not copy link: {error}"),
+                                        Ok(CopyStatus::Confirmed) => crate::i18n::tr!("onboarding-link-copied", "Copied link to clipboard").to_string(),
+                                        Ok(CopyStatus::Unconfirmed) => crate::i18n::tr!("onboarding-link-copy-unconfirmed", "Copy requested; check your clipboard").to_string(),
+                                        Ok(CopyStatus::Busy | CopyStatus::Pending(_)) => crate::i18n::tr!("onboarding-link-clipboard-busy", "Clipboard busy; try again").to_string(),
+                                        Err(error) => crate::i18n::tr_format!("onboarding-link-copy-failed", "Could not copy link: {error}", error = error),
                                     };
                                     *widget.error.write().unwrap_or_else(std::sync::PoisonError::into_inner) = Some(message);
                                 }
@@ -875,9 +875,11 @@ async fn persist_selected_trust(
             );
             if let Step::TrustDirectory(widget) = &mut onboarding_screen.steps[trust_step_index] {
                 widget.selection = None;
-                widget.error = Some(format!(
-                    "Failed to set trust for {}: {error}",
-                    trust_target.display()
+                widget.error = Some(crate::i18n::tr_format!(
+                    "onboarding-trust-save-failed",
+                    "Failed to set trust for {path}: {error}",
+                    path = trust_target.display(),
+                    error = &error
                 ));
             }
             false
