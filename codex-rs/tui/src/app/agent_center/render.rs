@@ -201,8 +201,8 @@ impl Renderable for AgentsOverviewView {
             if state.rename_target.is_some() {
                 line(
                     crate::i18n::tr!("agents-rename-prompt", "Rename › ")
-                    .cyan()
-                    .bold(),
+                        .cyan()
+                        .bold(),
                     layout.search,
                     buf,
                 );
