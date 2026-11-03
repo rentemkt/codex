@@ -131,7 +131,7 @@ impl ChatWidget {
             let Some(action) = self
                 .permission_mode_actions(
                     &preset,
-                    display_label.to_string(),
+                    display_label,
                     approvals_reviewer.unwrap_or(reviewer),
                     /*profile_selection*/ Some(selection),
                     /*return_to_permissions*/ true,
@@ -244,7 +244,7 @@ impl ChatWidget {
             items.push(Self::permission_profile_selection_item(
                 id,
                 id,
-                &crate::i18n::tr!("permissions-current-profile", "Current permission profile"),
+                crate::i18n::tr!("permissions-current-profile", "Current permission profile"),
                 Some(id),
                 Some(
                     crate::i18n::tr!(
