@@ -4,12 +4,17 @@ on:
   push:
     branches: [up/cli-pt-br-0166]
   workflow_dispatch:
+    inputs:
+      checks_only:
+        description: Validate a correction while an existing Mac build finishes
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
 concurrency:
-  group: localized-cli-${{ github.ref }}
+  group: localized-cli-${{ github.ref }}${{ inputs.checks_only && '-checks' || '' }}
   cancel-in-progress: false
 
 env:
@@ -75,6 +80,7 @@ jobs:
           key: localized-${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-1.95-${{ hashFiles('codex-rs/Cargo.lock') }}-${{ github.sha }}
 
   macos-arm64:
+    if: ${{ !inputs.checks_only }}
     name: Build the complete macOS ARM64 package
     # Public Intel runners have 14 GB RAM; do not select a paid larger runner.
     runs-on: macos-15-intel
