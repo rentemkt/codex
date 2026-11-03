@@ -19,6 +19,7 @@ use ratatui::text::Span;
 use ratatui::widgets::Paragraph;
 use ratatui::widgets::Widget;
 use strum::IntoEnumIterator;
+use unicode_width::UnicodeWidthStr;
 
 use self::render::detail_line;
 use self::render::detail_wrapped_lines;

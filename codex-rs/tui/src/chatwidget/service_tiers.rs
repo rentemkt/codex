@@ -7,6 +7,7 @@ use crate::bottom_pane::slash_commands::ServiceTierCommand;
 use crate::service_tier_resolution;
 use codex_features::Feature;
 use codex_protocol::config_types::SERVICE_TIER_DEFAULT_REQUEST_VALUE;
+use codex_protocol::config_types::ServiceTier;
 use codex_protocol::openai_models::SPEED_TIER_FAST;
 
 impl ChatWidget {
