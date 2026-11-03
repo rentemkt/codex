@@ -7,6 +7,7 @@ use codex_app_server_protocol::HooksListEntry;
 use crossterm::event::KeyCode;
 use crossterm::event::KeyEvent;
 use crossterm::event::KeyModifiers;
+use fluent_bundle::FluentArgs;
 use ratatui::buffer::Buffer;
 use ratatui::layout::Constraint;
 use ratatui::layout::Layout;
@@ -42,6 +43,27 @@ use crate::status::format_directory_display;
 const EVENT_COLUMN_WIDTH: usize = 22;
 const COUNT_COLUMN_WIDTH: usize = 12;
 const MAX_COMMAND_DETAIL_LINES: usize = 3;
+
+fn hooks_text(key: &str, english: &'static str) -> String {
+    crate::i18n::global().text(key, None, || english.to_string())
+}
+
+fn hooks_text_with_arg<F>(
+    key: &str,
+    arg_name: &str,
+    arg_value: impl Into<String>,
+    english: F,
+) -> String
+where
+    F: FnOnce() -> String,
+{
+    crate::i18n::global().text_with_string_arg(key, arg_name, arg_value, english)
+}
+
+fn pad_to_display_width(value: &str, width: usize) -> String {
+    let padding = width.saturating_sub(value.width());
+    format!("{value}{}", " ".repeat(padding))
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum HooksBrowserPage {
@@ -261,10 +283,13 @@ impl HooksBrowserView {
 
     fn event_header_lines() -> Vec<Line<'static>> {
         vec![
-            "Hooks".bold().into(),
-            "Lifecycle hooks from config and enabled plugins."
-                .dim()
-                .into(),
+            hooks_text("hooks-title", "Hooks").bold().into(),
+            hooks_text(
+                "hooks-subtitle",
+                "Lifecycle hooks from config and enabled plugins.",
+            )
+            .dim()
+            .into(),
         ]
     }
 
@@ -281,12 +306,22 @@ impl HooksBrowserView {
         event_name: HookEventName,
         review_needed_count: usize,
     ) -> Vec<Line<'static>> {
-        let mut lines = vec![format!("{} hooks", event_label(event_name)).bold().into()];
+        let event = event_label(event_name);
+        let mut lines = vec![
+            hooks_text_with_arg("hooks-event-handlers-title", "event", event.clone(), || {
+                format!("{event} hooks")
+            })
+            .bold()
+            .into(),
+        ];
         match review_needed_message(review_needed_count) {
             None => lines.push(
-                "Turn hooks on or off. Your changes are saved automatically."
-                    .dim()
-                    .into(),
+                hooks_text(
+                    "hooks-toggle-subtitle",
+                    "Turn hooks on or off. Your changes are saved automatically.",
+                )
+                .dim()
+                .into(),
             ),
             Some(message) => lines.push(message.yellow().into()),
         }
@@ -305,22 +340,40 @@ impl HooksBrowserView {
         let show_review = rows.iter().any(|row| row.needs_review > 0);
         let mut lines = Vec::new();
         let mut header = vec![
-            format!("{:<EVENT_COLUMN_WIDTH$}", "Event").into(),
-            format!("{:<COUNT_COLUMN_WIDTH$}", "Installed").into(),
-            format!("{:<COUNT_COLUMN_WIDTH$}", "Active").into(),
+            pad_to_display_width(
+                &hooks_text("hooks-column-event", "Event"),
+                EVENT_COLUMN_WIDTH,
+            )
+            .into(),
+            pad_to_display_width(
+                &hooks_text("hooks-column-installed", "Installed"),
+                COUNT_COLUMN_WIDTH,
+            )
+            .into(),
+            pad_to_display_width(
+                &hooks_text("hooks-column-active", "Active"),
+                COUNT_COLUMN_WIDTH,
+            )
+            .into(),
         ];
         if show_review {
-            header.push(format!("{:<COUNT_COLUMN_WIDTH$}", "Review").into());
+            header.push(
+                pad_to_display_width(
+                    &hooks_text("hooks-column-review", "Review"),
+                    COUNT_COLUMN_WIDTH,
+                )
+                .into(),
+            );
         }
-        header.push("Description".into());
+        header.push(hooks_text("hooks-column-description", "Description").into());
         lines.push(Line::from(header));
         for (idx, row) in rows.into_iter().enumerate() {
             let selected = self.state.selected_idx == Some(idx);
             let needs_review = row.needs_review > 0;
             let mut row_line = vec![
-                Span::from(format!(
-                    "{:<EVENT_COLUMN_WIDTH$}",
-                    event_label(row.event_name)
+                Span::from(pad_to_display_width(
+                    &event_label(row.event_name),
+                    EVENT_COLUMN_WIDTH,
                 )),
                 Span::from(format!("{:<COUNT_COLUMN_WIDTH$}", row.installed)),
                 Span::from(format!("{:<COUNT_COLUMN_WIDTH$}", row.active)),
@@ -364,7 +417,7 @@ impl HooksBrowserView {
             return lines;
         }
 
-        lines.push("Issues".bold().into());
+        lines.push(hooks_text("hooks-issues-title", "Issues").bold().into());
         lines.extend(
             self.entry
                 .warnings
@@ -422,11 +475,19 @@ impl HooksBrowserView {
                     .as_deref()
                     .map(str::trim)
                     .filter(|title| !title.is_empty())
-                    .unwrap_or("Unnamed hook");
-                let trust_suffix = match hook.trust_status {
-                    HookTrustStatus::Modified => " · modified",
-                    HookTrustStatus::Untrusted => " · new",
-                    HookTrustStatus::Managed | HookTrustStatus::Trusted => "",
+                    .unwrap_or(crate::i18n::tr!("hooks-unnamed", "Unnamed hook"));
+                let label = match hook.trust_status {
+                    HookTrustStatus::Modified => {
+                        hooks_text_with_arg("hooks-row-modified", "title", title, || {
+                            format!("{title} · modified")
+                        })
+                    }
+                    HookTrustStatus::Untrusted => {
+                        hooks_text_with_arg("hooks-row-new", "title", title, || {
+                            format!("{title} · new")
+                        })
+                    }
+                    HookTrustStatus::Managed | HookTrustStatus::Trusted => title.to_string(),
                 };
                 let prefix = if self.state.selected_idx == Some(idx) {
                     "› "
@@ -436,7 +497,7 @@ impl HooksBrowserView {
                 let mut line = Line::from(vec![
                     format!("{prefix}[{marker}] ").into(),
                     format!("{:>index_width$}", idx + 1).dim(),
-                    format!("  {title}{trust_suffix}").into(),
+                    format!("  {label}").into(),
                 ]);
                 line = truncate_line_with_ellipsis_if_overflow(line, width);
                 let needs_review = hook_needs_review(hook);
@@ -459,18 +520,26 @@ impl HooksBrowserView {
     ) -> Vec<crate::terminal_hyperlinks::HyperlinkLine> {
         let Some(hook) = self.selected_hook(event_name) else {
             return crate::terminal_hyperlinks::plain_hyperlink_lines(vec![
-                "No hooks installed for this event.".dim().into(),
+                hooks_text("hooks-none-for-event", "No hooks installed for this event.")
+                    .dim()
+                    .into(),
             ]);
         };
 
-        let mut lines = vec![detail_line("Event", event_label(event_name))];
+        let mut lines = vec![detail_line(
+            &hooks_text("hooks-detail-event", "Event"),
+            &event_label(event_name),
+        )];
         if let Some(matcher) = hook.matcher.as_deref() {
             lines.extend(detail_wrapped_lines(
-                "Matcher", matcher, width, /*max_lines*/ None,
+                &hooks_text("hooks-detail-matcher", "Matcher"),
+                matcher,
+                width,
+                /*max_lines*/ None,
             ));
         }
         lines.extend(detail_wrapped_lines(
-            "Source",
+            &hooks_text("hooks-detail-source", "Source"),
             &detail_source_value(hook),
             width,
             /*max_lines*/ None,
@@ -478,41 +547,73 @@ impl HooksBrowserView {
         match &hook.handler {
             HookHandlerMetadata::Command { command, r#async } => {
                 lines.extend(detail_wrapped_lines(
-                    "Command",
+                    &hooks_text("hooks-detail-command", "Command"),
                     command,
                     width,
                     Some(MAX_COMMAND_DETAIL_LINES),
                 ));
-                lines.push(detail_line("Mode", if *r#async { "Async" } else { "Sync" }));
+                lines.push(detail_line(
+                    crate::i18n::tr!("hooks-detail-mode", "Mode"),
+                    if *r#async {
+                        crate::i18n::tr!("hooks-mode-async", "Async")
+                    } else {
+                        crate::i18n::tr!("hooks-mode-sync", "Sync")
+                    },
+                ));
             }
             HookHandlerMetadata::McpTool { server, tool } => {
                 lines.extend(detail_wrapped_lines(
-                    "MCP Server",
+                    crate::i18n::tr!("hooks-detail-mcp-server", "MCP Server"),
                     server,
                     width,
                     /*max_lines*/ None,
                 ));
                 lines.extend(detail_wrapped_lines(
-                    "MCP Tool", tool, width, /*max_lines*/ None,
+                    crate::i18n::tr!("hooks-detail-mcp-tool", "MCP Tool"),
+                    tool,
+                    width,
+                    /*max_lines*/ None,
                 ));
             }
             HookHandlerMetadata::Prompt {} => {
-                lines.push(detail_line("Handler", "Prompt"));
+                lines.push(detail_line(
+                    crate::i18n::tr!("hooks-detail-handler", "Handler"),
+                    "Prompt",
+                ));
             }
             HookHandlerMetadata::Agent {} => {
-                lines.push(detail_line("Handler", "Agent"));
+                lines.push(detail_line(
+                    crate::i18n::tr!("hooks-detail-handler", "Handler"),
+                    crate::i18n::tr!("hooks-handler-agent", "Agent"),
+                ));
             }
         }
-        lines.push(detail_line("Timeout", &format!("{}s", hook.timeout_sec)));
+        let seconds = hook.timeout_sec.to_string();
+        let timeout =
+            hooks_text_with_arg("hooks-timeout-seconds", "seconds", seconds.clone(), || {
+                format!("{seconds}s")
+            });
+        lines.push(detail_line(
+            &hooks_text("hooks-detail-timeout", "Timeout"),
+            &timeout,
+        ));
         if let Some(limit) = hook.additional_context_limit {
             let value = if limit == 0 {
-                "unlimited".to_string()
+                hooks_text("hooks-context-unlimited", "unlimited")
             } else {
-                format!("limit: {limit} approximate tokens")
+                hooks_text_with_arg("hooks-context-limit", "limit", limit.to_string(), || {
+                    format!("limit: {limit} approximate tokens")
+                })
             };
-            lines.push(detail_line("Context", &value));
+            lines.push(detail_line(
+                &hooks_text("hooks-detail-context", "Context"),
+                &value,
+            ));
         }
-        lines.push(detail_line("Trust", hook_trust_label(hook.trust_status)));
+        lines.push(detail_line(
+            &hooks_text("hooks-detail-trust", "Trust"),
+            &hook_trust_label(hook.trust_status),
+        ));
         lines
     }
 
@@ -533,25 +634,35 @@ impl HooksBrowserView {
             HooksBrowserPage::Events => {
                 if self.review_needed_total_count() > 0 {
                     spans.extend(key_hint::plain(KeyCode::Char('t')).spans());
-                    spans.push(" trust all · ".dim());
+                    spans.push(
+                        crate::i18n::tr!("hooks-footer-trust-all-short", " trust all · ").dim(),
+                    );
                     if let Some(accept) = accept {
                         spans.extend(accept.spans());
-                        spans.push(" review · ".dim());
+                        spans.push(
+                            crate::i18n::tr!("hooks-footer-review-short", " review · ").dim(),
+                        );
                     }
                 } else if let Some(accept) = accept {
                     spans.extend(accept.spans());
-                    spans.push(" details · ".dim());
+                    spans.push(crate::i18n::tr!("hooks-footer-details-short", " details · ").dim());
                 }
                 spans.extend(cancel.spans());
-                spans.push(" close".dim());
+                spans.push(crate::i18n::tr!("hooks-footer-close-short", " close").dim());
             }
             HooksBrowserPage::Handlers(event_name) => {
                 if let Some(hook) = self.selected_hook(event_name) {
                     if hook.is_managed {
-                        spans.push("Managed (always on) · ".dim());
+                        spans.push(
+                            crate::i18n::tr!(
+                                "hooks-footer-managed-short",
+                                "Managed (always on) · "
+                            )
+                            .dim(),
+                        );
                     } else if hook_needs_review(hook) {
                         spans.extend(key_hint::plain(KeyCode::Char('t')).spans());
-                        spans.push(" trust · ".dim());
+                        spans.push(crate::i18n::tr!("hooks-footer-trust-short", " trust · ").dim());
                     } else {
                         let mut toggle = key_hint::plain(KeyCode::Char(' ')).display_label();
                         if let Some(accept) = accept {
@@ -559,11 +670,13 @@ impl HooksBrowserView {
                             toggle.push_str(&accept.display_label());
                         }
                         spans.extend(key_hint::key_label_spans(&toggle));
-                        spans.push(" toggle · ".dim());
+                        spans.push(
+                            crate::i18n::tr!("hooks-footer-toggle-short", " toggle · ").dim(),
+                        );
                     }
                 }
                 spans.extend(cancel.spans());
-                spans.push(" back".dim());
+                spans.push(crate::i18n::tr!("hooks-footer-back-short", " back").dim());
             }
         }
         let footer = Line::from(spans);
@@ -646,11 +759,17 @@ fn hook_is_active(hook: &HookMetadata) -> bool {
 }
 
 fn review_needed_message(count: usize) -> Option<String> {
-    match count {
-        0 => None,
-        1 => Some("1 hook needs review before it can run.".to_string()),
-        count => Some(format!("{count} hooks need review before they can run.")),
+    if count == 0 {
+        return None;
     }
+    let mut args = FluentArgs::new();
+    args.set("count", count);
+    Some(
+        crate::i18n::global().text("hooks-review-needed", Some(&args), || match count {
+            1 => "1 hook needs review before it can run.".to_string(),
+            count => format!("{count} hooks need review before they can run."),
+        }),
+    )
 }
 
 struct EventRow {
@@ -660,64 +779,123 @@ struct EventRow {
     needs_review: usize,
 }
 
-fn hook_trust_label(status: HookTrustStatus) -> &'static str {
+fn hook_trust_label(status: HookTrustStatus) -> String {
     match status {
-        HookTrustStatus::Managed => "Managed",
-        HookTrustStatus::Trusted => "Trusted",
-        HookTrustStatus::Untrusted => "New hook - review required",
-        HookTrustStatus::Modified => "Modified since last trusted - review required",
+        HookTrustStatus::Managed => hooks_text("hooks-trust-managed", "Managed"),
+        HookTrustStatus::Trusted => hooks_text("hooks-trust-trusted", "Trusted"),
+        HookTrustStatus::Untrusted => {
+            hooks_text("hooks-trust-untrusted", "New hook - review required")
+        }
+        HookTrustStatus::Modified => hooks_text(
+            "hooks-trust-modified",
+            "Modified since last trusted - review required",
+        ),
     }
 }
 
-fn event_label(event_name: HookEventName) -> &'static str {
+fn event_label(event_name: HookEventName) -> String {
     match event_name {
-        HookEventName::PreToolUse => "PreToolUse",
-        HookEventName::PermissionRequest => "PermissionRequest",
-        HookEventName::PostToolUse => "PostToolUse",
-        HookEventName::PreCompact => "PreCompact",
-        HookEventName::PostCompact => "PostCompact",
-        HookEventName::PreModelRequest => "PreModelRequest",
-        HookEventName::PostModelRequest => "PostModelRequest",
-        HookEventName::SessionStart => "SessionStart",
-        HookEventName::SessionEnd => "SessionEnd",
-        HookEventName::UserPromptSubmit => "UserPromptSubmit",
-        HookEventName::SubagentStart => "SubagentStart",
-        HookEventName::SubagentStop => "SubagentStop",
-        HookEventName::Stop => "Stop",
-        HookEventName::Interrupt => "Interrupt",
+        HookEventName::PreToolUse => hooks_text("hooks-event-pre-tool-use", "PreToolUse"),
+        HookEventName::PermissionRequest => {
+            hooks_text("hooks-event-permission-request", "PermissionRequest")
+        }
+        HookEventName::PostToolUse => hooks_text("hooks-event-post-tool-use", "PostToolUse"),
+        HookEventName::PreCompact => hooks_text("hooks-event-pre-compact", "PreCompact"),
+        HookEventName::PostCompact => hooks_text("hooks-event-post-compact", "PostCompact"),
+        HookEventName::SessionStart => hooks_text("hooks-event-session-start", "SessionStart"),
+        HookEventName::SessionEnd => hooks_text("hooks-event-session-end", "SessionEnd"),
+        HookEventName::UserPromptSubmit => {
+            hooks_text("hooks-event-user-prompt-submit", "UserPromptSubmit")
+        }
+        HookEventName::SubagentStart => hooks_text("hooks-event-subagent-start", "SubagentStart"),
+        HookEventName::SubagentStop => hooks_text("hooks-event-subagent-stop", "SubagentStop"),
+        HookEventName::Stop => hooks_text("hooks-event-stop", "Stop"),
+        HookEventName::Interrupt => hooks_text("hooks-event-interrupt", "Interrupt"),
+        HookEventName::PreModelRequest => {
+            hooks_text("hooks-event-pre-model-request", "PreModelRequest")
+        }
+        HookEventName::PostModelRequest => {
+            hooks_text("hooks-event-post-model-request", "PostModelRequest")
+        }
     }
 }
 
-fn event_description(event_name: HookEventName) -> &'static str {
+fn event_description(event_name: HookEventName) -> String {
     match event_name {
-        HookEventName::PreToolUse => "Before a tool executes",
-        HookEventName::PermissionRequest => "When permission is requested",
-        HookEventName::PostToolUse => "After a tool executes",
-        HookEventName::PreCompact => "Before context compaction",
-        HookEventName::PostCompact => "After context compaction",
-        HookEventName::PreModelRequest => "Before a model request",
-        HookEventName::PostModelRequest => "After a model request, including failures",
-        HookEventName::SessionStart => "When a new session starts",
-        HookEventName::SessionEnd => "Right before a session ends",
-        HookEventName::UserPromptSubmit => "When the user submits a prompt",
-        HookEventName::SubagentStart => "When a subagent is created",
-        HookEventName::SubagentStop => "Right before a subagent ends its turn",
-        HookEventName::Stop => "Right before Codex ends its turn",
-        HookEventName::Interrupt => "Right before an interrupted turn is aborted",
+        HookEventName::PreToolUse => hooks_text(
+            "hooks-event-pre-tool-use-description",
+            "Before a tool executes",
+        ),
+        HookEventName::PermissionRequest => hooks_text(
+            "hooks-event-permission-request-description",
+            "When permission is requested",
+        ),
+        HookEventName::PostToolUse => hooks_text(
+            "hooks-event-post-tool-use-description",
+            "After a tool executes",
+        ),
+        HookEventName::PreCompact => hooks_text(
+            "hooks-event-pre-compact-description",
+            "Before context compaction",
+        ),
+        HookEventName::PostCompact => hooks_text(
+            "hooks-event-post-compact-description",
+            "After context compaction",
+        ),
+        HookEventName::SessionStart => hooks_text(
+            "hooks-event-session-start-description",
+            "When a new session starts",
+        ),
+        HookEventName::SessionEnd => hooks_text(
+            "hooks-event-session-end-description",
+            "Right before a session ends",
+        ),
+        HookEventName::UserPromptSubmit => hooks_text(
+            "hooks-event-user-prompt-submit-description",
+            "When the user submits a prompt",
+        ),
+        HookEventName::SubagentStart => hooks_text(
+            "hooks-event-subagent-start-description",
+            "When a subagent is created",
+        ),
+        HookEventName::SubagentStop => hooks_text(
+            "hooks-event-subagent-stop-description",
+            "Right before a subagent ends its turn",
+        ),
+        HookEventName::Stop => hooks_text(
+            "hooks-event-stop-description",
+            "Right before Codex ends its turn",
+        ),
+        HookEventName::Interrupt => hooks_text(
+            "hooks-event-interrupt-description",
+            "Right before an interrupted turn is aborted",
+        ),
+        HookEventName::PreModelRequest => hooks_text(
+            "hooks-event-pre-model-request-description",
+            "Before a model request",
+        ),
+        HookEventName::PostModelRequest => hooks_text(
+            "hooks-event-post-model-request-description",
+            "After a model request, including failures",
+        ),
     }
 }
 
 fn hook_source_summary(hook: &HookMetadata) -> String {
     if let Some(id) = &hook.environment_id {
-        return format!("Environment - {id}");
+        return crate::i18n::tr_format!("hooks-source-environment", "Environment - {id}", id = id);
     }
     match hook.source {
         HookSource::Plugin => hook
             .plugin_id
             .as_deref()
-            .map(|plugin_id| format!("Plugin - {plugin_id}"))
-            .unwrap_or_else(|| "Plugin".to_string()),
-        _ => config_source_label(hook.source).to_string(),
+            .map(|plugin_id| {
+                hooks_text_with_arg("hooks-source-plugin-id", "plugin_id", plugin_id, || {
+                    format!("Plugin - {plugin_id}")
+                })
+            })
+            .unwrap_or_else(|| hooks_text("hooks-source-plugin", "Plugin")),
+        _ => config_source_label(hook.source),
     }
 }
 
@@ -732,7 +910,7 @@ fn detail_source_value(hook: &HookMetadata) -> String {
         | HookSource::CloudRequirements
         | HookSource::CloudManagedConfig
         | HookSource::LegacyManagedConfigFile
-        | HookSource::LegacyManagedConfigMdm => config_source_label(hook.source).to_string(),
+        | HookSource::LegacyManagedConfigMdm => config_source_label(hook.source),
         _ => format!(
             "{} - {}",
             config_source_label(hook.source),
@@ -741,19 +919,25 @@ fn detail_source_value(hook: &HookMetadata) -> String {
     }
 }
 
-fn config_source_label(source: HookSource) -> &'static str {
+fn config_source_label(source: HookSource) -> String {
     match source {
-        HookSource::System => "Admin config",
-        HookSource::User => "User config",
-        HookSource::Project => "Project config",
-        HookSource::Mdm => "Admin config",
-        HookSource::SessionFlags => "Session flags",
+        HookSource::System => hooks_text("hooks-source-admin-config", "Admin config"),
+        HookSource::User => hooks_text("hooks-source-user-config", "User config"),
+        HookSource::Project => hooks_text("hooks-source-project-config", "Project config"),
+        HookSource::Mdm => hooks_text("hooks-source-admin-config", "Admin config"),
+        HookSource::SessionFlags => hooks_text("hooks-source-session-flags", "Session flags"),
         HookSource::Plugin => unreachable!("plugin hooks are handled by summary_source"),
-        HookSource::CloudRequirements => "Admin config",
-        HookSource::CloudManagedConfig => "Cloud-managed config",
-        HookSource::LegacyManagedConfigFile => "Admin config",
-        HookSource::LegacyManagedConfigMdm => "Admin config",
-        HookSource::Unknown => "Unknown source",
+        HookSource::CloudRequirements => hooks_text("hooks-source-admin-config", "Admin config"),
+        HookSource::CloudManagedConfig => {
+            hooks_text("hooks-source-cloud-managed", "Cloud-managed config")
+        }
+        HookSource::LegacyManagedConfigFile => {
+            hooks_text("hooks-source-admin-config", "Admin config")
+        }
+        HookSource::LegacyManagedConfigMdm => {
+            hooks_text("hooks-source-admin-config", "Admin config")
+        }
+        HookSource::Unknown => hooks_text("hooks-source-unknown", "Unknown source"),
     }
 }
 

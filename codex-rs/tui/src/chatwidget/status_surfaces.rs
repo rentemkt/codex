@@ -40,10 +40,6 @@ pub(super) const TERMINAL_TITLE_SPINNER_INTERVAL: Duration = Duration::from_mill
 /// Time between action-required blink phases in the terminal title.
 const TERMINAL_TITLE_ACTION_REQUIRED_INTERVAL: Duration = Duration::from_secs(1);
 
-/// Prefix shown in the terminal title when the agent is blocked on user input.
-const TERMINAL_TITLE_ACTION_REQUIRED_PREFIX: &str = "[ ! ] Action Required";
-const TERMINAL_TITLE_ACTION_REQUIRED_PREFIX_HIDDEN: &str = "[ . ] Action Required";
-
 #[derive(Debug)]
 /// Parsed status-surface configuration for one refresh pass.
 ///
@@ -410,15 +406,18 @@ impl ChatWidget {
 
     fn action_required_terminal_title_prefix_at(&self, now: Instant) -> &'static str {
         if !(self.local_settings.tui.animations && self.local_settings.tui.effects.title) {
-            return TERMINAL_TITLE_ACTION_REQUIRED_PREFIX;
+            return crate::i18n::tr!("terminal-title-action-required", "[ ! ] Action Required");
         }
 
         let elapsed = now.saturating_duration_since(self.terminal_title_animation_origin);
         let phase = (elapsed.as_millis() / TERMINAL_TITLE_ACTION_REQUIRED_INTERVAL.as_millis()) % 2;
         if phase == 0 {
-            TERMINAL_TITLE_ACTION_REQUIRED_PREFIX
+            crate::i18n::tr!("terminal-title-action-required", "[ ! ] Action Required")
         } else {
-            TERMINAL_TITLE_ACTION_REQUIRED_PREFIX_HIDDEN
+            crate::i18n::tr!(
+                "terminal-title-action-required-hidden",
+                "[ . ] Action Required"
+            )
         }
     }
 
@@ -736,11 +735,21 @@ impl ChatWidget {
                 let ConfigLayerSource::User { profile, .. } = &layer.name else {
                     return None;
                 };
-                profile.as_ref().map(|name| format!("profile: {name}"))
+                profile.as_ref().map(|name| {
+                    crate::i18n::tr_format!(
+                        "status-line-profile-value",
+                        "profile: {name}",
+                        name = name
+                    )
+                })
             }
-            StatusLineItem::Provider => self
-                .thread_id
-                .map(|_| format!("provider: {}", self.config.model_provider_id)),
+            StatusLineItem::Provider => self.thread_id.map(|_| {
+                crate::i18n::tr_format!(
+                    "status-line-provider-value",
+                    "provider: {id}",
+                    id = &self.config.model_provider_id
+                )
+            }),
             StatusLineItem::CurrentDir => {
                 Some(format_directory_display(
                     self.status_line_cwd(),
@@ -761,7 +770,7 @@ impl ChatWidget {
                 .and_then(|summary| summary.branch_change_stats.as_ref())
                 .map(|stats| {
                     if stats.additions == 0 && stats.deletions == 0 {
-                        "No changes".to_string()
+                        crate::i18n::tr!("status-line-no-changes", "No changes").to_string()
                     } else {
                         format!("+{} -{}", stats.additions, stats.deletions)
                     }
@@ -775,15 +784,30 @@ impl ChatWidget {
                 if total <= 0 {
                     None
                 } else {
-                    Some(format!("{} used", format_tokens_compact(total)))
+                    Some(crate::i18n::tr_format!(
+                        "status-line-tokens-used",
+                        "{tokens} used",
+                        tokens = format_tokens_compact(total)
+                    ))
                 }
             }
-            StatusLineItem::ContextRemaining => self
-                .status_line_context_remaining_percent()
-                .map(|remaining| format!("Context {remaining}% left")),
-            StatusLineItem::ContextUsed => self
-                .status_line_context_used_percent()
-                .map(|used| format!("Context {used}% used")),
+            StatusLineItem::ContextRemaining => {
+                self.status_line_context_remaining_percent()
+                    .map(|remaining| {
+                        crate::i18n::tr_format!(
+                            "status-line-context-remaining",
+                            "Context {percent}% left",
+                            percent = remaining
+                        )
+                    })
+            }
+            StatusLineItem::ContextUsed => self.status_line_context_used_percent().map(|used| {
+                crate::i18n::tr_format!(
+                    "status-line-context-used",
+                    "Context {percent}% used",
+                    percent = used
+                )
+            }),
             StatusLineItem::FiveHourLimit => {
                 let (window, is_secondary) = self
                     .rate_limit_snapshots_by_limit_id
@@ -801,26 +825,40 @@ impl ChatWidget {
                 self.status_line_limit_display(Some(window), &label)
             }
             StatusLineItem::CodexVersion => Some(CODEX_CLI_VERSION.to_string()),
-            StatusLineItem::ContextWindowSize => self
-                .status_line_context_window_size()
-                .map(|cws| format!("{} window", format_tokens_compact(cws))),
+            StatusLineItem::ContextWindowSize => {
+                self.status_line_context_window_size().map(|cws| {
+                    crate::i18n::tr_format!(
+                        "status-line-window-tokens",
+                        "{tokens} window",
+                        tokens = format_tokens_compact(cws)
+                    )
+                })
+            }
             StatusLineItem::TotalInputTokens => (!self.token_usage_pending).then(|| {
-                format!(
-                    "{} in",
-                    format_tokens_compact(self.status_line_total_usage().input_tokens)
+                crate::i18n::tr_format!(
+                    "status-line-input-tokens",
+                    "{tokens} in",
+                    tokens = format_tokens_compact(self.status_line_total_usage().input_tokens)
                 )
             }),
             StatusLineItem::TotalOutputTokens => (!self.token_usage_pending).then(|| {
-                format!(
-                    "{} out",
-                    format_tokens_compact(self.status_line_total_usage().output_tokens)
+                crate::i18n::tr_format!(
+                    "status-line-output-tokens",
+                    "{tokens} out",
+                    tokens = format_tokens_compact(self.status_line_total_usage().output_tokens)
                 )
             }),
             StatusLineItem::ThreadCredits => self
                 .estimated_thread_usage()
                 .filter(|_| self.plan_type != Some(PlanType::Ent26))
                 .map(|usage| usage.estimated_usage_credits_micros)
-                .map(|credits| format!("{} credits", format_credit_micros(credits))),
+                .map(|credits| {
+                    crate::i18n::tr_format!(
+                        "status-line-thread-credits",
+                        "{credits} credits",
+                        credits = format_credit_micros(credits)
+                    )
+                }),
             StatusLineItem::EstimatedThreadCost => self
                 .estimated_thread_usage()
                 .and_then(|usage| thread_cost_micros(usage, self.plan_type))
@@ -833,12 +871,14 @@ impl ChatWidget {
             ),
             StatusLineItem::Daybreak => Some(
                 if self.daybreak_enabled && !self.side_conversation_active() {
-                    "Daybreak on".to_string()
+                    crate::i18n::tr!("status-line-daybreak-on", "Daybreak on").to_string()
                 } else {
-                    "Daybreak off".to_string()
+                    crate::i18n::tr!("status-line-daybreak-off", "Daybreak off").to_string()
                 },
             ),
-            StatusLineItem::RawOutput => self.raw_output_mode().then(|| "raw output".to_string()),
+            StatusLineItem::RawOutput => self
+                .raw_output_mode()
+                .then(|| crate::i18n::tr!("status-line-raw-output", "raw output").to_string()),
             StatusLineItem::ThreadName => {
                 self.thread_name.as_deref().and_then(normalize_thread_name)
             }
@@ -1026,24 +1066,30 @@ impl ChatWidget {
     /// as `Ready` regardless of the last active status bucket.
     pub(super) fn run_state_status_text(&self) -> String {
         if self.mcp_startup_status.is_some() {
-            return "Starting".to_string();
+            return crate::i18n::tr!("status-run-state-starting", "Starting").to_string();
         }
 
         match self.status_state.terminal_title_status_kind {
             TerminalTitleStatusKind::Working if !self.bottom_pane.is_task_running() => {
-                "Ready".to_string()
+                crate::i18n::tr!("status-run-state-ready", "Ready").to_string()
             }
             TerminalTitleStatusKind::WaitingForBackgroundTerminal
                 if !self.bottom_pane.is_task_running() =>
             {
-                "Ready".to_string()
+                crate::i18n::tr!("status-run-state-ready", "Ready").to_string()
             }
             TerminalTitleStatusKind::Thinking if !self.bottom_pane.is_task_running() => {
-                "Ready".to_string()
+                crate::i18n::tr!("status-run-state-ready", "Ready").to_string()
             }
-            TerminalTitleStatusKind::Working => "Working".to_string(),
-            TerminalTitleStatusKind::WaitingForBackgroundTerminal => "Waiting".to_string(),
-            TerminalTitleStatusKind::Thinking => "Thinking".to_string(),
+            TerminalTitleStatusKind::Working => {
+                crate::i18n::tr!("status-run-state-working", "Working").to_string()
+            }
+            TerminalTitleStatusKind::WaitingForBackgroundTerminal => {
+                crate::i18n::tr!("status-run-state-waiting", "Waiting").to_string()
+            }
+            TerminalTitleStatusKind::Thinking => {
+                crate::i18n::tr!("status-run-state-thinking", "Thinking").to_string()
+            }
         }
     }
 
@@ -1254,26 +1300,30 @@ fn permissions_display(config: &Config) -> String {
     if let Some(details) = summary.strip_prefix("read-only")
         && !details.contains("(network access enabled)")
     {
-        return "Read Only".to_string();
+        return crate::i18n::tr!("permissions-read-only", "Read Only").to_string();
     }
     if let Some(details) = summary.strip_prefix("workspace-write")
         && !details.contains("(network access enabled)")
     {
-        return "Workspace".to_string();
+        return crate::i18n::tr!("status-permissions-workspace", "Workspace").to_string();
     }
     if permission_profile == PermissionProfile::Disabled {
-        return "Full Access".to_string();
+        return crate::i18n::tr!("permissions-full-access", "Full Access").to_string();
     }
 
-    "Custom permissions".to_string()
+    crate::i18n::tr!("status-permissions-custom", "Custom permissions").to_string()
 }
 
 fn approval_mode_display(config: &Config) -> String {
     let approval_policy = AskForApproval::from(config.permissions.approval_policy.value());
     if approval_policy == AskForApproval::OnRequest {
         return match config.approvals_reviewer {
-            ApprovalsReviewer::AutoReview => "Approve for me".to_string(),
-            ApprovalsReviewer::User => "Ask for approval".to_string(),
+            ApprovalsReviewer::AutoReview => {
+                crate::i18n::tr!("permissions-approve-for-me", "Approve for me").to_string()
+            }
+            ApprovalsReviewer::User => {
+                crate::i18n::tr!("permissions-ask-for-approval", "Ask for approval").to_string()
+            }
         };
     }
 

@@ -466,8 +466,11 @@ use ratatui::style::Color;
 const LARGE_PASTE_CHAR_THRESHOLD: usize = 1000;
 
 fn user_input_too_large_message(actual_chars: usize) -> String {
-    format!(
-        "Message exceeds the maximum length of {MAX_USER_INPUT_TEXT_CHARS} characters ({actual_chars} provided)."
+    crate::i18n::tr_format!(
+        "composer-message-exceeds-limit",
+        "Message exceeds the maximum length of {limit} characters ({actual} provided).",
+        limit = MAX_USER_INPUT_TEXT_CHARS,
+        actual = actual_chars
     )
 }
 
@@ -1712,7 +1715,11 @@ impl ChatComposer {
 
     pub(crate) fn set_parent_owned_thread(&mut self) {
         self.blocks_direct_input = true;
-        self.placeholder_text = "Viewing sub-agent — direct input is disabled".to_string();
+        self.placeholder_text = crate::i18n::tr!(
+            "composer-viewing-subagent",
+            "Viewing sub-agent — direct input is disabled"
+        )
+        .to_string();
     }
 
     /// Move the cursor to the end of the current text buffer.
@@ -3084,8 +3091,15 @@ impl ChatComposer {
                 .slash_input()
                 .validate_submission(&text, input_starts_with_space)
         {
-            let message = format!(
-                r#"Unrecognized command '/{name}'. Type "/" for a list of supported commands."#
+            let message = crate::i18n::global().text_with_string_arg(
+                "slash-unrecognized-command",
+                "name",
+                name.as_str(),
+                || {
+                    format!(
+                        r#"Unrecognized command '/{name}'. Type "/" for a list of supported commands."#
+                    )
+                },
             );
             self.app_event_tx.send(AppEvent::InsertHistoryCell(Box::new(
                 history_cell::new_info_event(message, /*hint*/ None),
@@ -3123,8 +3137,12 @@ impl ChatComposer {
             if self.footer.hint_override.is_some() {
                 self.show_footer_flash(
                     Line::from(
-                        format!("Message too long; limit {MAX_USER_INPUT_TEXT_CHARS} characters")
-                            .red(),
+                        crate::i18n::tr_format!(
+                            "composer-message-too-long",
+                            "Message too long; limit {limit} characters",
+                            limit = MAX_USER_INPUT_TEXT_CHARS
+                        )
+                        .red(),
                     ),
                     Duration::from_secs(5),
                 );
@@ -3447,9 +3465,10 @@ impl ChatComposer {
         {
             return false;
         }
-        let message = format!(
-            "'/{}' is disabled while a task is in progress.",
-            command.command()
+        let message = crate::i18n::tr_format!(
+            "slash-command-disabled-during-task",
+            "'/{command}' is disabled while a task is in progress.",
+            command = command.command()
         );
         self.app_event_tx.send(AppEvent::InsertHistoryCell(Box::new(
             history_cell::new_error_event(message),
@@ -3641,9 +3660,11 @@ impl ChatComposer {
     }
 
     fn shell_mode_footer_line(&self) -> Option<Line<'static>> {
-        self.is_bang_shell_command()
-            .then_some(())
-            .map(|_| Line::from(vec![Span::from("Shell mode").light_red()]))
+        self.is_bang_shell_command().then_some(()).map(|_| {
+            Line::from(vec![
+                Span::from(crate::i18n::tr!("composer-shell-mode", "Shell mode")).light_red(),
+            ])
+        })
     }
 
     /// Handles keys that mutate the textarea, including paste-burst detection.
@@ -4256,9 +4277,13 @@ impl ChatComposer {
                 if !plugin.mcp_server_names.is_empty() {
                     let mcp_server_count = plugin.mcp_server_names.len();
                     capability_labels.push(if mcp_server_count == 1 {
-                        "1 MCP server".to_string()
+                        crate::i18n::tr!("mention-capability-mcp-one", "1 MCP server").to_string()
                     } else {
-                        format!("{mcp_server_count} MCP servers")
+                        crate::i18n::tr_format!(
+                            "mention-capability-mcp-many",
+                            "{count} MCP servers",
+                            count = mcp_server_count
+                        )
                     });
                 }
                 if !plugin.app_connector_ids.is_empty() {
@@ -4273,7 +4298,11 @@ impl ChatComposer {
                     Some(if capability_labels.is_empty() {
                         "Plugin".to_string()
                     } else {
-                        format!("Plugin · {}", capability_labels.join(" · "))
+                        crate::i18n::tr_format!(
+                            "composer-plugin-capabilities",
+                            "Plugin · {capabilities}",
+                            capabilities = capability_labels.join(" · ")
+                        )
                     })
                 });
                 let mut search_terms = vec![plugin_name.to_string(), plugin.config_name.clone()];
@@ -4351,7 +4380,10 @@ impl ChatComposer {
     }
 
     pub(crate) fn show_shutdown_in_progress(&mut self) {
-        self.set_input_enabled(/*enabled*/ false, Some("Shutting down...".to_string()));
+        self.set_input_enabled(
+            /*enabled*/ false,
+            Some(crate::i18n::tr!("composer-shutting-down", "Shutting down...").to_string()),
+        );
         self.footer.quit_shortcut_expires_at = None;
         self.footer.mode = FooterMode::ComposerEmpty;
         self.footer.hint_override = Some(Vec::new());
@@ -5012,7 +5044,10 @@ impl ChatComposer {
                 self.draft
                     .input_disabled_placeholder
                     .as_deref()
-                    .unwrap_or("Input disabled.")
+                    .unwrap_or(crate::i18n::tr!(
+                        "composer-input-disabled",
+                        "Input disabled."
+                    ))
                     .to_string()
             };
             if !textarea_rect.is_empty() {

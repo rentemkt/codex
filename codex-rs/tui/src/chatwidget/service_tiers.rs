@@ -86,10 +86,21 @@ impl ChatWidget {
                             .service_tiers
                             .into_iter()
                             .filter(|tier| self.config.features.service_tier_enabled(&tier.id))
-                            .map(|tier| ServiceTierCommand {
-                                id: tier.id,
-                                name: tier.name.to_lowercase(),
-                                description: tier.description,
+                            .map(|tier| {
+                                let description = if tier.id == ServiceTier::Fast.request_value() {
+                                    crate::i18n::global().text(
+                                        "service-tier-fast-description",
+                                        None,
+                                        || tier.description.clone(),
+                                    )
+                                } else {
+                                    tier.description.clone()
+                                };
+                                ServiceTierCommand {
+                                    id: tier.id,
+                                    name: tier.name.to_lowercase(),
+                                    description,
+                                }
                             })
                             .collect()
                     })

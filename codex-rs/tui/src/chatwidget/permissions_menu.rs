@@ -1,5 +1,6 @@
 //! Named permission choices in the shared picker, using the server catalog and existing actions.
 
+use super::permission_i18n;
 use super::*;
 use crate::permission_discovery::PermissionDiscovery;
 use codex_protocol::models::BUILT_IN_PERMISSION_PROFILE_DANGER_FULL_ACCESS;
@@ -60,8 +61,7 @@ impl ChatWidget {
         let reviewer = match profile_id {
             ":approve-for-me" if !self.config.features.enabled(Feature::GuardianApproval) => {
                 self.add_error_message(
-                    "Approve for me is unavailable. Run `/permissions` to see available profiles."
-                        .into(),
+                    crate::i18n::tr!("permissions-approve-for-me-unavailable", "Approve for me is unavailable. Run `/permissions` to see available profiles.").into(),
                 );
                 return false;
             }
@@ -77,9 +77,7 @@ impl ChatWidget {
             .iter()
             .find(|profile| profile.id == profile_id)
         else {
-            self.add_error_message(format!(
-                "Unknown permission profile `{profile_id}`. Run `/permissions` to see available profiles."
-            ));
+            self.add_error_message(crate::i18n::tr_format!("permissions-unknown-profile", "Unknown permission profile `{profile_id}`. Run `/permissions` to see available profiles.", profile_id = profile_id));
             return false;
         };
         let preset = builtin_approval_presets()
@@ -105,18 +103,24 @@ impl ChatWidget {
             approval_policy,
             approvals_reviewer.map(Into::into),
         ) {
-            self.add_error_message(format!(
-                "Permission profile `{profile_id}` is unavailable: {reason}."
+            self.add_error_message(crate::i18n::tr_format!(
+                "permissions-profile-unavailable",
+                "Permission profile `{profile_id}` is unavailable: {reason}.",
+                profile_id = profile_id,
+                reason = reason
             ));
             return false;
         }
-        let display_label = preset.as_ref().map_or(profile.id.as_str(), |preset| {
-            match (preset.id, approvals_reviewer) {
-                ("auto", Some(ApprovalsReviewer::AutoReview)) => APPROVE_FOR_ME_LABEL,
-                ("auto", _) => ASK_FOR_APPROVAL_LABEL,
-                _ => preset.label,
-            }
-        });
+        let display_label = preset.as_ref().map_or_else(
+            || profile.id.clone(),
+            |preset| match (preset.id, approvals_reviewer) {
+                ("auto", Some(ApprovalsReviewer::AutoReview)) => {
+                    permission_i18n::approve_for_me_label()
+                }
+                ("auto", _) => permission_i18n::ask_for_approval_label(),
+                _ => permission_i18n::preset_label(preset),
+            },
+        );
         let selection = PermissionProfileSelection {
             profile_id: profile_id.to_string(),
             approval_policy,
@@ -174,7 +178,7 @@ impl ChatWidget {
             &discovery,
             default,
             ":workspace",
-            permission_preset_description(default).to_string(),
+            permission_i18n::preset_description(default),
             AskForApproval::from(default.approval),
             ApprovalsReviewer::User,
         )];
@@ -183,7 +187,7 @@ impl ChatWidget {
                 &discovery,
                 default,
                 ":workspace",
-                AUTO_REVIEW_DESCRIPTION.to_string(),
+                permission_i18n::auto_review_description(),
                 AskForApproval::OnRequest,
                 ApprovalsReviewer::AutoReview,
             ));
@@ -192,7 +196,7 @@ impl ChatWidget {
             &discovery,
             full_access,
             BUILT_IN_PERMISSION_PROFILE_DANGER_FULL_ACCESS,
-            permission_preset_description(full_access).to_string(),
+            permission_i18n::preset_description(full_access),
             AskForApproval::from(full_access.approval),
             ApprovalsReviewer::User,
         ));
@@ -200,7 +204,7 @@ impl ChatWidget {
             &discovery,
             read_only,
             ":read-only",
-            permission_preset_description(read_only).to_string(),
+            permission_i18n::preset_description(read_only),
             AskForApproval::from(read_only.approval),
             ApprovalsReviewer::User,
         ));
@@ -210,13 +214,16 @@ impl ChatWidget {
                 .iter()
                 .filter(|profile| !profile.id.starts_with(':'))
                 .map(|profile| {
+                    let description = profile.description.clone().unwrap_or_else(|| {
+                        permission_i18n::text(
+                            "permissions-configured-profile-description",
+                            "Configured permission profile.",
+                        )
+                    });
                     Self::permission_profile_selection_item(
                         &profile.id,
                         &profile.id,
-                        profile
-                            .description
-                            .as_deref()
-                            .unwrap_or("Configured permission profile"),
+                        &description,
                         active_profile_id.as_deref(),
                         discovery.disabled_reason(
                             &profile.id,
@@ -237,19 +244,31 @@ impl ChatWidget {
             items.push(Self::permission_profile_selection_item(
                 id,
                 id,
-                "Current permission profile",
+                &crate::i18n::tr!("permissions-current-profile", "Current permission profile"),
                 Some(id),
-                Some("Not available on this server".to_string()),
+                Some(
+                    crate::i18n::tr!(
+                        "permissions-unavailable-on-server",
+                        "Not available on this server"
+                    )
+                    .to_string(),
+                ),
             ));
         }
         self.bottom_pane.show_selection_view(SelectionViewParams {
             view_id: Some(super::permission_discovery::VIEW_ID),
             items,
-            title: Some("Update Model Permissions".to_string()),
-            subtitle: discovery
-                .profiles
-                .is_empty()
-                .then(|| "No permission profiles returned by the server.".to_string()),
+            title: Some(permission_i18n::text(
+                "permissions-picker-title",
+                "Update Model Permissions",
+            )),
+            subtitle: discovery.profiles.is_empty().then(|| {
+                crate::i18n::tr!(
+                    "permissions-no-profiles-returned",
+                    "No permission profiles returned by the server."
+                )
+                .to_string()
+            }),
             ..SelectionViewParams::picker()
         });
     }
@@ -264,9 +283,9 @@ impl ChatWidget {
         approvals_reviewer: ApprovalsReviewer,
     ) -> SelectionItem {
         let label = match (preset.id, approvals_reviewer) {
-            ("auto", ApprovalsReviewer::AutoReview) => APPROVE_FOR_ME_LABEL,
-            ("auto", ApprovalsReviewer::User) => ASK_FOR_APPROVAL_LABEL,
-            _ => preset.label,
+            ("auto", ApprovalsReviewer::AutoReview) => permission_i18n::approve_for_me_label(),
+            ("auto", ApprovalsReviewer::User) => permission_i18n::ask_for_approval_label(),
+            _ => permission_i18n::preset_label(preset),
         };
         let active_profile_id = self
             .config
@@ -281,10 +300,10 @@ impl ChatWidget {
             profile_id,
             approval_policy: Some(approval_policy),
             approvals_reviewer: Some(approvals_reviewer),
-            display_label: label.to_string(),
+            display_label: label.clone(),
         };
         SelectionItem {
-            name: label.to_string(),
+            name: label.clone(),
             description: Some(description),
             is_current: active_profile_id.as_deref().map_or_else(
                 || {
@@ -300,7 +319,7 @@ impl ChatWidget {
                 && current_reviewer == approvals_reviewer,
             actions: self.permission_mode_actions(
                 preset,
-                label.to_string(),
+                label,
                 approvals_reviewer,
                 Some(selection),
                 /*return_to_permissions*/ true,

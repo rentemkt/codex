@@ -22,7 +22,15 @@ impl ChatWidget {
 
         match result {
             Ok(entry) => self.open_hooks_browser(entry),
-            Err(err) => self.add_error_message(format!("Failed to load hooks: {err}")),
+            Err(err) => {
+                let message = crate::i18n::global().text_with_string_arg(
+                    "hooks-load-failed",
+                    "error",
+                    err.clone(),
+                    || format!("Failed to load hooks: {err}"),
+                );
+                self.add_error_message(message);
+            }
         }
     }
 

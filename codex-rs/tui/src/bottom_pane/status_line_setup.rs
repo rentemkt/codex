@@ -305,11 +305,33 @@ impl StatusLineSetupView {
         app_event_tx: AppEventSender,
         list_keymap: ListKeymap,
     ) -> Self {
+        Self::new_with_localizer(
+            status_line_items,
+            use_theme_colors,
+            preview_data,
+            app_event_tx,
+            list_keymap,
+            crate::i18n::global(),
+        )
+    }
+
+    fn new_with_localizer(
+        status_line_items: Option<&[String]>,
+        use_theme_colors: bool,
+        preview_data: StatusSurfacePreviewData,
+        app_event_tx: AppEventSender,
+        list_keymap: ListKeymap,
+        localizer: &crate::i18n::Localizer,
+    ) -> Self {
         let mut used_ids = HashSet::new();
         let mut items = vec![MultiSelectItem {
             id: STATUS_LINE_USE_THEME_COLORS_ITEM_ID.to_string(),
-            name: "Use theme colors".to_string(),
-            description: Some("Apply colors from the active /theme".to_string()),
+            name: localizer.text("status-line-use-theme-colors", None, || {
+                "Use theme colors".to_string()
+            }),
+            description: Some(localizer.text("status-line-apply-theme-colors", None, || {
+                "Apply colors from the active /theme".to_string()
+            })),
             enabled: use_theme_colors,
             orderable: false,
             section_break_after: true,
@@ -328,6 +350,7 @@ impl StatusLineSetupView {
                     item,
                     /*enabled*/ true,
                     &preview_data,
+                    localizer,
                 ));
             }
         }
@@ -341,13 +364,20 @@ impl StatusLineSetupView {
                 item,
                 /*enabled*/ false,
                 &preview_data,
+                localizer,
             ));
         }
 
         Self {
             picker: MultiSelectPicker::builder(
-                "Configure Status Line".to_string(),
-                Some("Select which items to display in the status line.".to_string()),
+                localizer.text("status-line-configure-title", None, || {
+                    "Configure Status Line".to_string()
+                }),
+                Some(
+                    localizer.text("status-line-select-items-description", None, || {
+                        "Select which items to display in the status line.".to_string()
+                    }),
+                ),
                 app_event_tx,
             )
             .list_keymap(list_keymap)
@@ -392,19 +422,25 @@ impl StatusLineSetupView {
         item: StatusLineItem,
         enabled: bool,
         preview_data: &StatusSurfacePreviewData,
+        localizer: &crate::i18n::Localizer,
     ) -> MultiSelectItem {
         let default_name = item.to_string();
         let default_description = item.description();
-        let (name, description) = match item {
+        let (runtime_name, runtime_description) = match item {
             StatusLineItem::FiveHourLimit | StatusLineItem::WeeklyLimit => (
                 preview_data.rate_limit_item_name(item.preview_item(), &default_name),
                 preview_data.rate_limit_item_description(item.preview_item(), default_description),
             ),
             _ => (default_name, default_description.to_string()),
         };
+        let item_id = item.to_string();
+        let name_key = format!("status-line-item-{item_id}-name");
+        let description_key = format!("status-line-item-{item_id}-description");
+        let name = localizer.text(&name_key, None, || runtime_name);
+        let description = localizer.text(&description_key, None, || runtime_description);
 
         MultiSelectItem {
-            id: item.to_string(),
+            id: item_id,
             name,
             description: Some(description),
             enabled,

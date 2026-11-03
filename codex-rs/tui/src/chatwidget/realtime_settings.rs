@@ -11,7 +11,7 @@ use codex_realtime_webrtc::AudioDeviceKind;
 
 fn back_item(parent: fn() -> AppEvent) -> SelectionItem {
     SelectionItem {
-        name: "Back".to_string(),
+        name: crate::i18n::tr!("selection-back", "Back").to_string(),
         actions: vec![Box::new(move |tx| tx.send(parent()))],
         dismiss_on_select: true,
         ..Default::default()
@@ -33,16 +33,17 @@ impl ChatWidget {
 
     pub(crate) fn open_realtime_settings(&mut self) {
         self.bottom_pane.show_selection_view(SelectionViewParams {
-            title: Some("Voice settings".to_string()),
+            title: Some(crate::i18n::tr!("voice-settings-title", "Voice settings").to_string()),
             items: vec![
                 SelectionItem {
-                    name: "Set sound devices".to_string(),
+                    name: crate::i18n::tr!("voice-set-sound-devices", "Set sound devices")
+                        .to_string(),
                     actions: vec![Box::new(|tx| tx.send(AppEvent::OpenRealtimeSoundDevices))],
                     dismiss_on_select: true,
                     ..Default::default()
                 },
                 SelectionItem {
-                    name: "Choose a voice".to_string(),
+                    name: crate::i18n::tr!("voice-choose-voice", "Choose a voice").to_string(),
                     actions: vec![Box::new(|tx| tx.send(AppEvent::OpenRealtimeVoices))],
                     dismiss_on_select: true,
                     ..Default::default()
@@ -74,8 +75,14 @@ impl ChatWidget {
             .collect();
         items.push(back_item(|| AppEvent::OpenRealtimeSettings));
         self.bottom_pane.show_selection_view(SelectionViewParams {
-            title: Some("Select voice".to_string()),
-            subtitle: Some("Applies to your next voice conversation.".to_string()),
+            title: Some(crate::i18n::tr!("voice-select-title", "Select voice").to_string()),
+            subtitle: Some(
+                crate::i18n::tr!(
+                    "voice-next-conversation",
+                    "Applies to your next voice conversation."
+                )
+                .to_string(),
+            ),
             footer_hint: Some(standard_popup_hint_line()),
             items,
             on_cancel: Some(Box::new(|tx| tx.send(AppEvent::OpenRealtimeSettings))),
@@ -89,12 +96,22 @@ impl ChatWidget {
         };
         let mut items = Vec::new();
         for (kind, label, selected) in [
-            (AudioDeviceKind::Input, "Input device", audio.microphone),
-            (AudioDeviceKind::Output, "Output device", audio.speaker),
+            (
+                AudioDeviceKind::Input,
+                crate::i18n::tr!("voice-input-device", "Input device"),
+                audio.microphone,
+            ),
+            (
+                AudioDeviceKind::Output,
+                crate::i18n::tr!("voice-output-device", "Output device"),
+                audio.speaker,
+            ),
         ] {
             items.push(SelectionItem {
                 name: label.into(),
-                description: Some(selected.unwrap_or_else(|| "System default".into())),
+                description: Some(selected.unwrap_or_else(|| {
+                    crate::i18n::tr!("voice-system-default", "System default").into()
+                })),
                 actions: vec![Box::new(move |tx| {
                     tx.send(AppEvent::OpenRealtimeDevicePicker { kind })
                 })],
@@ -104,8 +121,14 @@ impl ChatWidget {
         }
         items.push(back_item(|| AppEvent::OpenRealtimeSettings));
         self.bottom_pane.show_selection_view(SelectionViewParams {
-            title: Some("Sound devices".to_string()),
-            subtitle: Some("Applies to your next voice conversation.".into()),
+            title: Some(crate::i18n::tr!("voice-sound-devices-title", "Sound devices").to_string()),
+            subtitle: Some(
+                crate::i18n::tr!(
+                    "voice-next-conversation",
+                    "Applies to your next voice conversation."
+                )
+                .into(),
+            ),
             footer_hint: Some(standard_popup_hint_line()),
             items,
             on_cancel: Some(Box::new(|tx| tx.send(AppEvent::OpenRealtimeSettings))),
@@ -122,8 +145,14 @@ impl ChatWidget {
             return;
         };
         let (title, current) = match kind {
-            AudioDeviceKind::Input => ("Input device", audio.microphone),
-            AudioDeviceKind::Output => ("Output device", audio.speaker),
+            AudioDeviceKind::Input => (
+                crate::i18n::tr!("voice-input-device", "Input device"),
+                audio.microphone,
+            ),
+            AudioDeviceKind::Output => (
+                crate::i18n::tr!("voice-output-device", "Output device"),
+                audio.speaker,
+            ),
         };
         let selected = devices
             .iter()
@@ -149,12 +178,20 @@ impl ChatWidget {
             .map(|device| {
                 let name = device.map(|device| device.name);
                 let is_current = name == current;
-                let disabled_reason = name
-                    .as_ref()
-                    .filter(|name| ambiguous.contains(*name))
-                    .map(|_| "Identical device names; use System default.".into());
+                let disabled_reason =
+                    name.as_ref()
+                        .filter(|name| ambiguous.contains(*name))
+                        .map(|_| {
+                            crate::i18n::tr!(
+                                "voice-identical-device-names",
+                                "Identical device names; use System default."
+                            )
+                            .into()
+                        });
                 SelectionItem {
-                    name: name.clone().unwrap_or_else(|| "System default".into()),
+                    name: name.clone().unwrap_or_else(|| {
+                        crate::i18n::tr!("voice-system-default", "System default").into()
+                    }),
                     is_current,
                     disabled_reason,
                     actions: vec![Box::new(move |tx| {
@@ -175,14 +212,18 @@ impl ChatWidget {
             items.insert(
                 parent + 1,
                 SelectionItem {
-                    name: "Input channels".into(),
+                    name: crate::i18n::tr!("voice-input-channels", "Input channels").into(),
                     child_label: Some('a'),
                     description: Some(audio.microphone_channel.as_ref().map_or_else(
-                        || "All channels (mixed)".into(),
+                        || {
+                            crate::i18n::tr!("voice-all-channels-mixed", "All channels (mixed)")
+                                .into()
+                        },
                         |channels| {
-                            format!(
-                                "Inputs {}",
-                                channels
+                            crate::i18n::tr_format!(
+                                "voice-inputs-list",
+                                "Inputs {channels}",
+                                channels = channels
                                     .as_slice()
                                     .iter()
                                     .map(ToString::to_string)
@@ -204,7 +245,13 @@ impl ChatWidget {
         items.push(back_item(|| AppEvent::OpenRealtimeSoundDevices));
         self.bottom_pane.show_selection_view(SelectionViewParams {
             title: Some(title.into()),
-            subtitle: Some("Applies to your next voice conversation.".into()),
+            subtitle: Some(
+                crate::i18n::tr!(
+                    "voice-next-conversation",
+                    "Applies to your next voice conversation."
+                )
+                .into(),
+            ),
             items,
             footer_hint: Some(standard_popup_hint_line()),
             on_cancel: Some(Box::new(|tx| tx.send(AppEvent::OpenRealtimeSoundDevices))),
@@ -219,8 +266,18 @@ impl ChatWidget {
         let current = audio.microphone_channel;
         let count = microphone.channels;
         let picker = MultiSelectPicker::builder(
-            format!("Microphone: {}", microphone.name),
-            Some("Select the input channels to mix. Select at least one.".into()),
+            crate::i18n::tr_format!(
+                "voice-microphone-title",
+                "Microphone: {name}",
+                name = microphone.name
+            ),
+            Some(
+                crate::i18n::tr!(
+                    "voice-select-input-channels",
+                    "Select the input channels to mix. Select at least one."
+                )
+                .into(),
+            ),
             self.app_event_tx.clone(),
         )
         .list_keymap(self.bottom_pane.list_keymap())
@@ -228,7 +285,11 @@ impl ChatWidget {
             (1..=count)
                 .map(|number| MultiSelectItem {
                     id: number.to_string(),
-                    name: format!("Input {number}"),
+                    name: crate::i18n::tr_format!(
+                        "voice-input-number",
+                        "Input {number}",
+                        number = number
+                    ),
                     enabled: current.as_ref().is_none_or(|channels| {
                         channels
                             .as_slice()
@@ -241,10 +302,14 @@ impl ChatWidget {
         )
         .require_selection()
         .on_preview(|items| {
-            items
-                .iter()
-                .all(|item| !item.enabled)
-                .then(|| "Select at least one input channel.".red().into())
+            items.iter().all(|item| !item.enabled).then(|| {
+                crate::i18n::tr!(
+                    "voice-select-one-input-channel",
+                    "Select at least one input channel."
+                )
+                .red()
+                .into()
+            })
         })
         .on_confirm(move |ids, tx| {
             let selected: Vec<_> = (1..=count)
@@ -276,9 +341,10 @@ impl ChatWidget {
     pub(crate) fn on_realtime_voice_saved(&mut self, voice: RealtimeVoice) {
         self.set_realtime_voice(Some(voice));
         self.add_info_message(
-            format!(
-                "Voice set to {}. Applies to your next voice conversation.",
-                voice.wire_name()
+            crate::i18n::tr_format!(
+                "voice-saved",
+                "Voice set to {value}. Applies to your next voice conversation.",
+                value = voice.wire_name()
             ),
             /*hint*/ None,
         );

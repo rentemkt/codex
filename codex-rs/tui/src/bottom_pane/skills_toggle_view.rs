@@ -33,7 +33,9 @@ use super::popup_consts::MAX_POPUP_ROWS;
 use super::scroll_state::ScrollState;
 use super::selection_popup_common::GenericDisplayRow;
 
-const SEARCH_PLACEHOLDER: &str = "Type to search skills";
+fn skills_toggle_text(key: &str, english: &'static str) -> String {
+    crate::i18n::global().text(key, None, || english.to_string())
+}
 
 pub(crate) struct SkillsToggleItem {
     pub name: String,
@@ -63,11 +65,18 @@ impl SkillsToggleView {
     ) -> Self {
         let mut header = ColumnRenderable::new();
         header.push(
-            Paragraph::new(Line::from("Enable/Disable Skills".bold())).wrap(Wrap { trim: false }),
+            Paragraph::new(Line::from(
+                skills_toggle_text("skills-manage", "Enable/Disable Skills").bold(),
+            ))
+            .wrap(Wrap { trim: false }),
         );
         header.push(
             Paragraph::new(Line::from(
-                "Turn skills on or off. Your changes are saved automatically.".dim(),
+                skills_toggle_text(
+                    "skills-toggle-subtitle",
+                    "Turn skills on or off. Your changes are saved automatically.",
+                )
+                .dim(),
             ))
             .wrap(Wrap { trim: false }),
         );
@@ -301,7 +310,7 @@ impl Renderable for SkillsToggleView {
 
         if search_area.height > 0 {
             let query_span = if self.search_query.is_empty() {
-                SEARCH_PLACEHOLDER.dim()
+                skills_toggle_text("skills-search-placeholder", "Type to search skills").dim()
             } else {
                 self.search_query.clone().into()
             };
@@ -315,7 +324,7 @@ impl Renderable for SkillsToggleView {
                 &rows,
                 &self.state,
                 render_area.height as usize,
-                "no matches",
+                &skills_toggle_text("command-popup-no-matches", "no matches"),
             );
         }
 

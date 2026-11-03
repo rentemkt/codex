@@ -14,8 +14,12 @@ use codex_app_server_protocol::McpServerStatusUpdatedNotification;
 
 use super::ChatWidget;
 
-const MCP_STARTUP_SINGLE_HEADER_PREFIX: &str = "Booting MCP server:";
-const MCP_STARTUP_MULTI_HEADER_PREFIX: &str = "Starting MCP servers";
+fn mcp_startup_single_header_prefix() -> &'static str {
+    crate::i18n::tr!("mcp-startup-single-header", "Booting MCP server:")
+}
+fn mcp_startup_multi_header_prefix() -> &'static str {
+    crate::i18n::tr!("mcp-startup-multi-header", "Starting MCP servers")
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum McpStartupStatus {
@@ -184,11 +188,12 @@ impl ChatWidget {
         }
         Some(if total > 1 {
             format!(
-                "{MCP_STARTUP_MULTI_HEADER_PREFIX} ({completed}/{total}): {}",
+                "{} ({completed}/{total}): {}",
+                mcp_startup_multi_header_prefix(),
                 to_show.join(", ")
             )
         } else {
-            format!("{MCP_STARTUP_SINGLE_HEADER_PREFIX} {first}")
+            format!("{} {first}", mcp_startup_single_header_prefix())
         })
     }
 
@@ -202,21 +207,26 @@ impl ChatWidget {
     pub(super) fn finish_mcp_startup(&mut self, failed: Vec<String>, cancelled: Vec<String>) {
         if !cancelled.is_empty() {
             self.add_mcp_startup_warning(
-                vec![format!(
-                    "MCP startup interrupted. The following servers were not initialized: {}",
-                    cancelled.join(", ")
-                )],
+                vec![crate::i18n::tr_format!("mcp-startup-interrupted-servers", "MCP startup interrupted. The following servers were not initialized: {servers}", servers = cancelled.join(", "))],
                 cancelled,
                 /*failure_reason*/ None,
             );
         }
         let mut parts = Vec::new();
         if !failed.is_empty() {
-            parts.push(format!("failed: {}", failed.join(", ")));
+            parts.push(crate::i18n::tr_format!(
+                "mcp-startup-failed-servers",
+                "failed: {servers}",
+                servers = failed.join(", ")
+            ));
         }
         if !parts.is_empty() {
             self.add_mcp_startup_warning(
-                vec![format!("MCP startup incomplete ({})", parts.join("; "))],
+                vec![crate::i18n::tr_format!(
+                    "mcp-startup-incomplete",
+                    "MCP startup incomplete ({details})",
+                    details = parts.join("; ")
+                )],
                 failed,
                 /*failure_reason*/ None,
             );
@@ -279,12 +289,12 @@ impl ChatWidget {
         self.status_state
             .current_status
             .header
-            .starts_with(MCP_STARTUP_SINGLE_HEADER_PREFIX)
+            .starts_with(mcp_startup_single_header_prefix())
             || self
                 .status_state
                 .current_status
                 .header
-                .starts_with(MCP_STARTUP_MULTI_HEADER_PREFIX)
+                .starts_with(mcp_startup_multi_header_prefix())
     }
 
     fn add_mcp_startup_warning(
@@ -310,12 +320,26 @@ impl ChatWidget {
         let status = match notification.status {
             McpServerStartupState::Starting => McpStartupStatus::Starting,
             McpServerStartupState::Ready => McpStartupStatus::Ready,
-            McpServerStartupState::Failed => McpStartupStatus::Failed {
-                failure_reason: notification.failure_reason,
-                error: notification.error.unwrap_or_else(|| {
-                    format!("MCP client for `{}` failed to start", notification.name)
-                }),
-            },
+            McpServerStartupState::Failed => {
+                let english_prefix =
+                    format!("MCP client for `{}` failed to start", notification.name);
+                let error = notification.error.unwrap_or_else(|| english_prefix.clone());
+                let localized_prefix = crate::i18n::global().text_with_string_arg(
+                    "mcp-client-failed-to-start",
+                    "name",
+                    notification.name.as_str(),
+                    || english_prefix.clone(),
+                );
+                let error = error
+                    .strip_prefix(&english_prefix)
+                    .map_or(error.clone(), |suffix| {
+                        format!("{localized_prefix}{suffix}")
+                    });
+                McpStartupStatus::Failed {
+                    error,
+                    failure_reason: notification.failure_reason,
+                }
+            }
             McpServerStartupState::Cancelled => McpStartupStatus::Cancelled,
         };
         self.update_mcp_startup_status(

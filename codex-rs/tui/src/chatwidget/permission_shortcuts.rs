@@ -1,5 +1,6 @@
 //! Cycle ordinary built-in modes using the last permission catalog received from the server.
 
+use super::permission_i18n;
 use super::*;
 
 impl ChatWidget {
@@ -102,9 +103,11 @@ impl ChatWidget {
                         |active| active.id == preset.active_permission_profile.id,
                     );
                 let label = match (preset.id, reviewer) {
-                    ("auto", ApprovalsReviewer::User) => ASK_FOR_APPROVAL_LABEL,
-                    ("auto", ApprovalsReviewer::AutoReview) => APPROVE_FOR_ME_LABEL,
-                    _ => preset.label,
+                    ("auto", ApprovalsReviewer::User) => permission_i18n::ask_for_approval_label(),
+                    ("auto", ApprovalsReviewer::AutoReview) => {
+                        permission_i18n::approve_for_me_label()
+                    }
+                    _ => permission_i18n::preset_label(&preset),
                 };
                 choices.push((
                     is_current,
@@ -138,7 +141,11 @@ impl ChatWidget {
             });
         } else {
             self.add_info_message(
-                "No other permission modes are available.".to_string(),
+                crate::i18n::tr!(
+                    "permissions-no-other-modes",
+                    "No other permission modes are available."
+                )
+                .to_string(),
                 /*hint*/ None,
             );
         }
