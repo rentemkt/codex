@@ -72,7 +72,7 @@ pub enum InstallMethod {
     Pnpm,
     /// A Codex binary launched through the Vite+-managed `codex.js` shim.
     VitePlus,
-    /// A Codex binary that appears to come from a Homebrew install prefix.
+    /// A Codex binary managed by Homebrew, including one launched by a wrapper.
     Brew,
     /// Any other execution environment.
     ///
@@ -120,17 +120,7 @@ impl InstallContext {
     pub fn current() -> &'static Self {
         INSTALL_CONTEXT.get_or_init(|| {
             let current_exe = std::env::current_exe().ok();
-            let method_override = if std::env::var_os("CODEX_MANAGED_BY_VITE_PLUS").is_some() {
-                Some(InstallMethod::VitePlus)
-            } else if std::env::var_os("CODEX_MANAGED_BY_PNPM").is_some() {
-                Some(InstallMethod::Pnpm)
-            } else if std::env::var_os("CODEX_MANAGED_BY_NPM").is_some() {
-                Some(InstallMethod::Npm)
-            } else if std::env::var_os("CODEX_MANAGED_BY_BUN").is_some() {
-                Some(InstallMethod::Bun)
-            } else {
-                None
-            };
+            let method_override = install_method_override(|name| std::env::var_os(name).is_some());
             Self::from_exe(
                 cfg!(target_os = "macos"),
                 current_exe.as_deref(),
@@ -227,6 +217,18 @@ impl InstallContext {
 
         None
     }
+}
+
+fn install_method_override(is_set: impl Fn(&str) -> bool) -> Option<InstallMethod> {
+    [
+        ("CODEX_MANAGED_BY_BREW", InstallMethod::Brew),
+        ("CODEX_MANAGED_BY_VITE_PLUS", InstallMethod::VitePlus),
+        ("CODEX_MANAGED_BY_PNPM", InstallMethod::Pnpm),
+        ("CODEX_MANAGED_BY_NPM", InstallMethod::Npm),
+        ("CODEX_MANAGED_BY_BUN", InstallMethod::Bun),
+    ]
+    .into_iter()
+    .find_map(|(name, method)| is_set(name).then_some(method))
 }
 
 impl CodexPackageLayout {

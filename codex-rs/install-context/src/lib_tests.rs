@@ -498,6 +498,77 @@ fn package_manager_method_overrides_take_precedence() {
 }
 
 #[test]
+fn homebrew_wrapper_override_preserves_package_layout_and_resources() -> std::io::Result<()> {
+    let root = tempfile::tempdir()?;
+    let package = root.path().join("codex-pt-br/releases/0.166.0");
+    let bin = package.join(BIN_DIRNAME);
+    let resources = package.join(RESOURCES_DIRNAME);
+    let path = package.join(PATH_DIRNAME);
+    fs::create_dir_all(&bin)?;
+    fs::create_dir_all(&resources)?;
+    fs::create_dir_all(&path)?;
+    fs::write(
+        package.join(PACKAGE_METADATA_FILENAME),
+        r#"{"version":"0.166.0"}"#,
+    )?;
+    let executable = bin.join(if cfg!(windows) { "codex.exe" } else { "codex" });
+    fs::write(&executable, "localized cli")?;
+    fs::write(bin.join(CODE_MODE_HOST_EXECUTABLE_NAME), "official host")?;
+    fs::write(resources.join(TEST_RESOURCE_NAME), "official resource")?;
+    fs::write(path.join(default_rg_command()), "official rg")?;
+
+    let unmanaged = InstallContext::from_exe_with_codex_home(
+        /*is_macos*/ true,
+        Some(&executable),
+        /*method_override*/ None,
+        /*codex_home*/ None,
+    );
+    let managed = InstallContext::from_exe_with_codex_home(
+        /*is_macos*/ true,
+        Some(&executable),
+        install_method_override(|name| name == "CODEX_MANAGED_BY_BREW"),
+        /*codex_home*/ None,
+    );
+
+    assert_eq!(unmanaged.method, InstallMethod::Other);
+    assert_eq!(managed.method, InstallMethod::Brew);
+    assert_eq!(managed.package_layout, unmanaged.package_layout);
+    assert_eq!(managed.package_manifest(), unmanaged.package_manifest());
+    assert_eq!(managed.rg_command(), unmanaged.rg_command());
+    assert_eq!(
+        managed.code_mode_host_program(),
+        unmanaged.code_mode_host_program()
+    );
+    assert_eq!(
+        managed.bundled_resource(TEST_RESOURCE_NAME),
+        unmanaged.bundled_resource(TEST_RESOURCE_NAME)
+    );
+    Ok(())
+}
+
+#[test]
+fn managed_install_markers_keep_existing_methods_and_precedence() {
+    for (name, expected) in [
+        ("CODEX_MANAGED_BY_BREW", InstallMethod::Brew),
+        ("CODEX_MANAGED_BY_VITE_PLUS", InstallMethod::VitePlus),
+        ("CODEX_MANAGED_BY_PNPM", InstallMethod::Pnpm),
+        ("CODEX_MANAGED_BY_NPM", InstallMethod::Npm),
+        ("CODEX_MANAGED_BY_BUN", InstallMethod::Bun),
+    ] {
+        assert_eq!(
+            install_method_override(|candidate| candidate == name),
+            Some(expected)
+        );
+    }
+    assert_eq!(install_method_override(|_| false), None);
+    assert_eq!(
+        install_method_override(|name| name != "CODEX_MANAGED_BY_BREW"),
+        Some(InstallMethod::VitePlus)
+    );
+    assert_eq!(install_method_override(|_| true), Some(InstallMethod::Brew));
+}
+
+#[test]
 fn brew_is_detected_on_macos_prefixes() {
     let context = InstallContext::from_exe_with_codex_home(
         /*is_macos*/ true,
