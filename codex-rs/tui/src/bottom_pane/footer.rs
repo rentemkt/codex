@@ -1080,8 +1080,8 @@ pub(crate) fn context_window_line(percent: Option<i64>, used_tokens: Option<i64>
 
 #[cfg(test)]
 mod tests {
-    use super::super::status_line_style::fit_status_line_to_width;
     use super::*;
+    use crate::line_truncation::truncate_line_with_ellipsis_if_overflow;
     use crate::test_backend::VT100Backend;
     use insta::assert_snapshot;
     use pretty_assertions::assert_eq;
