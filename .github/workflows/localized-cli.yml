@@ -34,7 +34,7 @@ jobs:
       - name: Install native check dependencies
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y --no-install-recommends build-essential pkg-config libcap-dev libasound2-dev
+          sudo apt-get install -y --no-install-recommends build-essential pkg-config libcap-dev libasound2-dev zsh
       - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
         with:
           components: rustfmt, clippy
@@ -58,9 +58,11 @@ jobs:
         run: cargo clippy --locked -p codex-tui --lib -- -D warnings
       - name: Test localization
         run: cargo test --locked -p codex-tui i18n --lib
+      - name: Test official updater routing
+        run: cargo test --locked -p codex-install-context --lib
       - name: Test localized package assembly
         working-directory: .github/scripts
-        run: python3 -m unittest test_package_localized_cli.py
+        run: python3 -m unittest discover -p 'test_*localized_cli.py'
 
       - name: Save compiler and dependency cache
         if: ${{ always() && !cancelled() && steps.cargo_cache.outputs.cache-hit != 'true' }}

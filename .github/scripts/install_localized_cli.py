@@ -293,6 +293,7 @@ def compatible():
 command = OFFICIAL
 if first_command(sys.argv[1:]) != "update" and compatible():
     command = str(RELEASE / "bin/codex")
+    os.execve(command, [command, *sys.argv[1:]], {**os.environ, "CODEX_MANAGED_BY_BREW": "1"})
 os.execv(command, [command, *sys.argv[1:]])
 '''
     for marker, value in {

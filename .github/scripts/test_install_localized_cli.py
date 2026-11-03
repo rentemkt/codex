@@ -155,6 +155,26 @@ class InstallTests(unittest.TestCase):
         manifest.write_text(manifest.read_text() + " ")
         self.assertEqual(self.run_launcher("exec", "inspect")["source"], "official")
 
+    def test_homebrew_marker_applies_only_to_localized_execution(self):
+        self.install()
+        localized = self.release / "bin/codex"
+        localized.write_text(
+            "#!" + sys.executable + "\nimport json,os\n"
+            "print(json.dumps({'brew':os.environ.get('CODEX_MANAGED_BY_BREW')}))\n"
+        )
+        self.official.write_text(self.official.read_text().replace(
+            "import json, sys", "import json, os, sys"
+        ).replace(
+            "{'source':'official','args':sys.argv[1:]}",
+            "{'brew':os.environ.get('CODEX_MANAGED_BY_BREW')}",
+        ))
+        with mock.patch.dict(os.environ):
+            os.environ.pop("CODEX_MANAGED_BY_BREW", None)
+            self.assertEqual(self.run_launcher("exec", "inspect"), {"brew": "1"})
+            self.assertEqual(self.run_launcher("update"), {"brew": None})
+            self.version.write_text("0.167.0")
+            self.assertEqual(self.run_launcher("exec", "inspect"), {"brew": None})
+
     def test_update_routes_only_the_actual_subcommand_and_keeps_flags(self):
         self.install()
         for args in [("update",), ("-c", "model='x'", "--profile", "work", "update"),
