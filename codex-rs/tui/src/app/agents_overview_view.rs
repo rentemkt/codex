@@ -93,10 +93,10 @@ impl AgentsOverviewGroup {
 
     fn label(self) -> &'static str {
         match self {
-            Self::NeedsYou => "Needs input",
-            Self::Working => "Working",
-            Self::Ready => "Ready",
-            Self::Finished => "Inactive",
+            Self::NeedsYou => crate::i18n::tr!("agents-needs-input", "Needs input"),
+            Self::Working => crate::i18n::tr!("agents-working", "Working"),
+            Self::Ready => crate::i18n::tr!("agents-ready", "Ready"),
+            Self::Finished => crate::i18n::tr!("agents-inactive", "Inactive"),
         }
     }
 }
@@ -117,7 +117,11 @@ pub(super) struct AgentsOverviewRow {
 
 fn display_title(thread: &Thread) -> &str {
     let title = thread.name.as_deref().unwrap_or(&thread.preview);
-    title.trim().lines().next().unwrap_or("Untitled task")
+    title
+        .trim()
+        .lines()
+        .next()
+        .unwrap_or(crate::i18n::tr!("agents-untitled", "Untitled task"))
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -436,12 +440,19 @@ impl AgentsOverviewView {
             AgentsOverviewGroup::NeedsYou
                 if row.thread.status == ThreadStatus::SystemError && !is_subagent(&row.thread) =>
             {
-                ("Error", "!".red())
+                (crate::i18n::tr!("ui-error", "Error"), "!".red())
             }
-            AgentsOverviewGroup::NeedsYou => ("Needs input", "●".red()),
-            AgentsOverviewGroup::Working => ("Working", "●".green()),
-            AgentsOverviewGroup::Ready => ("Ready", "○".cyan()),
-            AgentsOverviewGroup::Finished => ("Inactive", "○".dim()),
+            AgentsOverviewGroup::NeedsYou => (
+                crate::i18n::tr!("agents-needs-input", "Needs input"),
+                "●".red(),
+            ),
+            AgentsOverviewGroup::Working => {
+                (crate::i18n::tr!("agents-working", "Working"), "●".green())
+            }
+            AgentsOverviewGroup::Ready => (crate::i18n::tr!("agents-ready", "Ready"), "○".cyan()),
+            AgentsOverviewGroup::Finished => {
+                (crate::i18n::tr!("agents-inactive", "Inactive"), "○".dim())
+            }
         }
     }
 
@@ -453,7 +464,7 @@ impl AgentsOverviewView {
         let width = usize::from(area.width);
         let model = crate::line_truncation::truncate_line_with_ellipsis_if_overflow(
             Line::from(vec![
-                "Model: ".dim(),
+                crate::i18n::tr!("agents-model-label", "Model: ").dim(),
                 model_name(&row.thread).to_string().into(),
             ]),
             width,
@@ -471,7 +482,7 @@ impl AgentsOverviewView {
             width,
         );
         let mut lines = vec![
-            Line::from("Task details".bold()),
+            Line::from(crate::i18n::tr!("agents-task-details", "Task details").bold()),
             Line::default(),
             crate::line_truncation::truncate_line_with_ellipsis_if_overflow(
                 Line::from(Span::styled(
@@ -485,7 +496,7 @@ impl AgentsOverviewView {
             model,
             reasoning,
             Line::default(),
-            Line::from("Project".dim()),
+            Line::from(crate::i18n::tr!("ui-project", "Project").dim()),
             Line::from(row.thread.cwd.display().to_string()),
         ];
         lines.extend(row.details.usage_lines.clone());
@@ -496,7 +507,7 @@ impl AgentsOverviewView {
             .and_then(|git| git.branch.as_ref())
         {
             lines.push(Line::default());
-            lines.push("Branch".dim().into());
+            lines.push(crate::i18n::tr!("ui-branch", "Branch").dim().into());
             lines.push(branch.clone().into());
         }
         // Keep destinations attached to their text through wrapping and clipping.
@@ -511,10 +522,13 @@ impl AgentsOverviewView {
         };
         let preview = super::agents_overview_details::preview_markdown(&row.thread.preview);
         let prompt_start = crate::wrapping::word_wrap_lines(lines.clone(), width).len();
-        lines.extend([Line::default(), Line::from("Prompt".dim())]);
+        lines.extend([
+            Line::default(),
+            Line::from(crate::i18n::tr!("agents-prompt", "Prompt").dim()),
+        ]);
         let prompt = crate::markdown_render::render_markdown_lines_with_width_and_cwd(
             match preview.as_str() {
-                "" => "No prompt available.",
+                "" => crate::i18n::tr!("agents-no-prompt", "No prompt available."),
                 preview => preview,
             },
             Some(width),
@@ -533,7 +547,9 @@ impl AgentsOverviewView {
             if let Some((message, cwd)) = &row.details.last_message {
                 details.extend(plain_hyperlink_lines(vec![
                     Line::default(),
-                    "Last message".dim().into(),
+                    crate::i18n::tr!("agents-last-message", "Last message")
+                        .dim()
+                        .into(),
                 ]));
                 details.extend(
                     crate::markdown_render::render_markdown_lines_with_width_and_cwd(

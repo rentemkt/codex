@@ -110,7 +110,7 @@ impl Renderable for AgentsOverviewView {
                 return state.input.cursor_pos(area);
             }
             let input = &state.search;
-            let prefix = "Search › ";
+            let prefix = crate::i18n::tr!("agents-search-prompt", "Search › ");
             let available = usize::from(layout.search.width).saturating_sub(prefix.width() + 1);
             return Some((
                 layout.search.x
@@ -136,10 +136,10 @@ impl Renderable for AgentsOverviewView {
             self.center_filter_hint()
         };
         let grouping = match state.grouping {
-            AgentsOverviewGrouping::Project => "Project",
+            AgentsOverviewGrouping::Project => crate::i18n::tr!("ui-project", "Project"),
             AgentsOverviewGrouping::Directory => "Directory",
-            AgentsOverviewGrouping::Status => "Status",
-            AgentsOverviewGrouping::Model => "Model",
+            AgentsOverviewGrouping::Status => crate::i18n::tr!("ui-status", "Status"),
+            AgentsOverviewGrouping::Model => crate::i18n::tr!("ui-model", "Model"),
         };
         let group_key = self
             .agents_keymap
@@ -148,8 +148,14 @@ impl Renderable for AgentsOverviewView {
             .unwrap_or_default();
         line(
             vec![
-                "Agent command center".bold(),
-                format!("  Group: {grouping}  {group_key}").dim(),
+                crate::i18n::tr!("agents-command-center", "Agent command center").bold(),
+                crate::i18n::tr_format!(
+                    "agents-group-header",
+                    "  Group: {grouping}  {group_key}",
+                    grouping = &grouping,
+                    group_key = &group_key
+                )
+                .dim(),
             ],
             inset(layout.header),
             buf,
@@ -191,7 +197,16 @@ impl Renderable for AgentsOverviewView {
         if state.editing_metadata() {
             buf.set_style(layout.search, crate::bottom_pane::active_tab_style());
             if state.rename_target.is_some() {
-                line("Rename › ".cyan().bold(), layout.search, buf);
+                line(
+                    crate::i18n::tr!(
+                        "agents-rename-prompt",
+                        crate::i18n::tr!("agents-rename-prompt", "Rename › ")
+                    )
+                    .cyan()
+                    .bold(),
+                    layout.search,
+                    buf,
+                );
                 let mut area = layout.search;
                 let prefix_width = 9.min(area.width);
                 area.x += prefix_width;
@@ -216,7 +231,7 @@ impl Renderable for AgentsOverviewView {
             .or_else(|| {
                 state
                     .creating_worktree
-                    .then(|| "Creating worktree…".to_owned())
+                    .then(|| crate::i18n::tr!("worktree-creating", "Creating worktree…").to_owned())
             })
             .or_else(|| {
                 state.removal.map(|action| match action {
@@ -229,7 +244,9 @@ impl Renderable for AgentsOverviewView {
                 })
             })
             .or_else(|| {
-                (state.refresh_failed && !state.loading).then(|| "Error loading tasks".to_owned())
+                (state.refresh_failed && !state.loading).then(|| {
+                    crate::i18n::tr!("agents-load-error", "Error loading tasks").to_owned()
+                })
             })
             .or_else(|| state.server_version_notice.clone());
         if let Some(notice) = notice.filter(|_| !state.help && state.key_chord_hint.is_none()) {
@@ -250,7 +267,11 @@ impl Renderable for AgentsOverviewView {
             let mut lines = self.center_help_lines(body.width);
             if lines.len() > usize::from(body.height) {
                 lines.truncate(usize::from(body.height.saturating_sub(/*rhs*/ 1)));
-                lines.push("… resize to see all".dim().into());
+                lines.push(
+                    crate::i18n::tr!("agents-resize-hint", "… resize to see all")
+                        .dim()
+                        .into(),
+                );
             }
             Paragraph::new(lines).render(body, buf);
             return;
