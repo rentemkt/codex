@@ -333,6 +333,7 @@ mod session_model_selection;
 use self::notifications::Notification;
 pub(crate) use self::session_model_selection::AstraModelPickerAction;
 mod permission_discovery;
+mod permission_i18n;
 mod permission_popups;
 mod permission_shortcuts;
 mod permissions_menu;

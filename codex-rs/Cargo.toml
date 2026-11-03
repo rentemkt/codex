@@ -393,7 +393,7 @@ eventsource-stream = "0.2.3"
 file-id = "0.2.3"
 flatbuffers = "25"
 flate2 = "1.1.8"
-fluent-bundle = "0.15.3"
+fluent-bundle = "0.16.0"
 futures = { version = "0.3", default-features = false }
 gethostname = "1.1.0"
 gix = { version = "0.89.0", default-features = false, features = ["sha1"] }
