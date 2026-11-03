@@ -373,9 +373,13 @@ fn brazilian_portuguese_locale_and_primary_alias_select_the_installed_pack() {
     assert_eq!(normalized_language("pt-br"), Some("pt-BR".to_string()));
     for requested in ["pt-BR", "pt-br", "pt"] {
         let localizer = Localizer::from_language_pack_root(requested, temp.path());
-        assert_eq!(localizer.locale.as_ref().map(ToString::to_string), Some("pt-BR".to_string()));
         assert_eq!(
-            localizer.text("status-line-configure-title", None, || "English fallback".to_string()),
+            localizer.locale.as_ref().map(ToString::to_string),
+            Some("pt-BR".to_string())
+        );
+        assert_eq!(
+            localizer.text("status-line-configure-title", None, || "English fallback"
+                .to_string()),
             "Configurar barra de status"
         );
     }
@@ -392,8 +396,13 @@ fn ambiguous_primary_language_alias_does_not_choose_a_regional_variant() {
     let temp = TempDir::new().expect("temp dir");
     for locale in ["pt-BR", "pt-PT"] {
         write_language_pack(
-            temp.path(), locale, locale, /*api_min*/ 1, /*api_max*/ 1,
-            TEST_PT_BR_FTL, /*hash_override*/ None,
+            temp.path(),
+            locale,
+            locale,
+            /*api_min*/ 1,
+            /*api_max*/ 1,
+            TEST_PT_BR_FTL,
+            /*hash_override*/ None,
         );
     }
     let ambiguous = Localizer::from_language_pack_root("pt", temp.path());
@@ -401,7 +410,10 @@ fn ambiguous_primary_language_alias_does_not_choose_a_regional_variant() {
     assert!(save_language_preference_with_root(temp.path(), "pt", temp.path()).is_err());
     assert!(!temp.path().join("ui-language").exists());
     let exact = Localizer::from_language_pack_root("pt-BR", temp.path());
-    assert_eq!(exact.locale.as_ref().map(ToString::to_string), Some("pt-BR".to_string()));
+    assert_eq!(
+        exact.locale.as_ref().map(ToString::to_string),
+        Some("pt-BR".to_string())
+    );
 }
 
 #[test]
@@ -423,22 +435,36 @@ fn duplicate_locale_packs_are_both_disabled() {
     let temp = TempDir::new().expect("temp dir");
     for directory in ["first", "second"] {
         write_language_pack(
-            temp.path(), directory, "pt-BR", /*api_min*/ 1, /*api_max*/ 1,
-            TEST_PT_BR_FTL, /*hash_override*/ None,
+            temp.path(),
+            directory,
+            "pt-BR",
+            /*api_min*/ 1,
+            /*api_max*/ 1,
+            TEST_PT_BR_FTL,
+            /*hash_override*/ None,
         );
     }
     let candidates = discover_language_packs(temp.path()).expect("discover packs");
     assert_eq!(candidates.len(), 2);
     assert!(candidates.iter().all(|candidate| !candidate.is_available()));
-    assert!(Localizer::from_language_pack_root("pt-BR", temp.path()).bundle.is_none());
+    assert!(
+        Localizer::from_language_pack_root("pt-BR", temp.path())
+            .bundle
+            .is_none()
+    );
 }
 
 #[test]
 fn brazilian_runtime_and_macro_caches_are_isolated_from_english_tests() {
     let temp = TempDir::new().expect("temp dir");
     write_language_pack(
-        temp.path(), "pt-BR", "pt-BR", /*api_min*/ 1, /*api_max*/ 1,
-        TEST_PT_BR_FTL, /*hash_override*/ None,
+        temp.path(),
+        "pt-BR",
+        "pt-BR",
+        /*api_min*/ 1,
+        /*api_max*/ 1,
+        TEST_PT_BR_FTL,
+        /*hash_override*/ None,
     );
     // A child exercises startup locale selection and static label caches without
     // changing this test process's environment or the user's CODEX_HOME.
@@ -470,12 +496,18 @@ fn brazilian_runtime_macro_child() {
         super::tr!("status-line-configure-title", "Configure Status Line"),
         "Configurar barra de status"
     );
-    assert_eq!(super::tr!("missing-static-key", "English fallback"), "English fallback");
+    assert_eq!(
+        super::tr!("missing-static-key", "English fallback"),
+        "English fallback"
+    );
     for current in [1, 2] {
         assert_eq!(
             super::tr_format!(
-                "probe-arguments", "Hello, {name}! {current} of {total}.",
-                name = "João", current = current, total = 3
+                "probe-arguments",
+                "Hello, {name}! {current} of {total}.",
+                name = "João",
+                current = current,
+                total = 3
             ),
             format!("Olá, João! {current} de 3.")
         );
